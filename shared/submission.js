@@ -67,9 +67,14 @@ export function validateSubmission(data) {
   return errors;
 }
 
+// Offizielles GreenFusion-Logo (White-Variante für dunklen Header).
+const LOGO_WHITE =
+  'https://raw.githubusercontent.com/dlizardo-pixel/Ressources-Greenfusion/main/GreenFusion-Logo-horizontal-white-RGB.svg';
+
 const wrapHtml = (title, inner) => `
 <div style="font-family:'Source Sans 3',Arial,sans-serif;color:#324B4A;max-width:680px;margin:0 auto;">
   <div style="background:#062726;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
+    <img src="${LOGO_WHITE}" alt="GreenFusion" height="28" style="display:block;margin-bottom:12px;" />
     <h1 style="margin:0;font-size:20px;font-weight:600;">${esc(title)}</h1>
   </div>
   <div style="border:1px solid #E7FAF3;border-top:none;padding:20px 24px;border-radius:0 0 12px 12px;">
@@ -182,15 +187,15 @@ export function buildSummaryHtml(data) {
 /** Freundliche Bestätigungs-E-Mail an den Kunden. */
 export function buildConfirmationHtml(name) {
   const greeting = isFilled(name) ? `Hallo ${esc(name)},` : 'Hallo,';
-  return wrapHtml('Vielen Dank für Ihre Angaben', `
+  return wrapHtml('Alles angekommen — danke.', `
     <p>${greeting}</p>
-    <p>vielen Dank! Ihre Angaben zu Ihren Heizungsanlagen sind <strong>vollständig bei uns angekommen</strong>.</p>
-    <p>Unser Team erstellt daraus eine Wirtschaftlichkeitsanalyse und meldet sich bei Ihnen.
-       Sie müssen nichts weiter tun.</p>
-    <p style="margin-top:24px;">Herzliche Grüße<br/>Ihr Green-Fusion-Team</p>
+    <p>Ihre Angaben sind bei uns angekommen. Wir rechnen jetzt durch, was Ihre Anlagen sparen können,
+       und melden uns dann bei Ihnen.</p>
+    <p>Kein Verkaufsgespräch — erstmal nur die Zahlen. Wenn vorher etwas unklar ist oder Sie etwas
+       nachreichen möchten, antworten Sie einfach auf diese Mail.</p>
+    <p style="margin-top:24px;">Viele Grüße<br/>Ihr Team von Green Fusion</p>
     <p style="font-size:12px;color:#6b8584;margin-top:24px;">
-      Diese E-Mail wurde automatisch versendet. Ihre Daten werden ausschließlich zur Erstellung
-      der Wirtschaftlichkeitsanalyse durch Green Fusion verarbeitet.
+      Diese Mail kam automatisch. Ihre Daten nutzen wir nur, um Ihre mögliche Ersparnis zu berechnen.
     </p>
   `);
 }

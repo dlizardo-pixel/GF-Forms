@@ -16,10 +16,10 @@ export default function ThankYou() {
               <path d="M5 13l4 4L19 7" stroke="#28C391" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h1>Vielen Dank!</h1>
+          <h1>Geschafft — danke.</h1>
           <p>
-            Ihre Angaben sind vollständig bei uns angekommen. Sie erhalten in Kürze eine
-            Bestätigung per E-Mail. Unser Team meldet sich bei Ihnen – Sie müssen nichts weiter tun.
+            Wir rechnen Ihnen jetzt schwarz auf weiß aus, was Ihre Anlagen sparen können, und melden uns.
+            Kein Verkaufsgespräch, erstmal nur die Zahlen. Wenn vorher Fragen aufkommen: einfach melden.
           </p>
           {mock && (
             <p style={{ fontSize: 13, color: 'var(--gf-sunstone)', marginTop: 16 }}>
