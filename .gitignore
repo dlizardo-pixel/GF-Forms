@@ -1,0 +1,17 @@
+# Abhängigkeiten
+node_modules/
+
+# Build-Ausgabe
+dist/
+
+# Lokale Umgebungsvariablen / Secrets – NIEMALS committen!
+.env
+.env.local
+.dev.vars
+
+# Cloudflare / Wrangler
+.wrangler/
+
+# Logs & System
+*.log
+.DS_Store

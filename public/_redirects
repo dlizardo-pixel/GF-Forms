@@ -1,0 +1,5 @@
+# SPA-Fallback für Cloudflare Pages: alle nicht von einer Pages Function
+# (z. B. /api/submit) oder einer echten Datei abgedeckten Pfade liefern die
+# React-App aus, damit das clientseitige Routing (/standard, /sektorkopplung,
+# /danke) auch bei direktem Aufruf funktioniert.
+/* /index.html 200
