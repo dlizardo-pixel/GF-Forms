@@ -286,9 +286,28 @@ GF-Forms/
 - **CSV-Spalten**: `shared/csv.js` (an die bestehende GF-Anlagenliste angelehnt).
 - **Auswahloptionen** (Heizungstypen, Komponenten): `src/lib/options.js`.
 - **Hersteller-Vorschläge**: `shared/manufacturers.js`.
-- **Design-Farben/Schrift**: CSS-Variablen oben in `src/index.css`.
-- **Schwelle „geführt vs. Tabelle"**: Konstante `GUIDED_MAX` in
-  `src/routes/StandardForm.jsx` (Standard: 10).
+- **Design-Farben/Schrift/Icons**: `src/index.css` (Tokens) und `src/lib/brandAssets.js`.
+- **Texte in Kundensprache**: direkt in den Seiten unter `src/routes/` und in den
+  Feld-Komponenten (`src/components/standard/`).
+- **Verhalten / Schwellen**: `src/lib/config.js`
+  - `GUIDED_MAX` – bis zu wie vielen Anlagen der geführte Fluss läuft (Standard: 3);
+    darüber die Tabelle.
+  - `PORTFOLIO_HINT_FROM` – ab wie vielen Anlagen der „Liste per Mail schicken"-
+    Hinweis erscheint (Standard: 15).
+  - `GF_CONTACT_EMAIL` – Empfänger dieses „Notausgang"-Knopfes. Per Build-Variable
+    `VITE_GF_CONTACT_EMAIL` überschreibbar (kein Secret, da clientseitig sichtbar).
+
+### Weniger Abbrüche – was eingebaut ist
+
+- **Tabelle als Hauptmodus** ab 4 Anlagen (wie die gewohnte Excel-Liste), mit
+  **„Aus Excel einfügen"**, Zeile duplizieren / „Werte von oben übernehmen",
+  Zeilen hinzufügen/löschen und aufklappbarer Detailzeile für seltene Felder.
+- **Zwischenspeichern im Browser** (`localStorage`): unterbrechen und später
+  weitermachen; nach dem Absenden wird der Entwurf gelöscht. Logik in
+  `src/lib/draft.js`.
+- **Schätzen ausdrücklich erlaubt**, Pflichtfelder auf das Minimum (Adresse,
+  Fläche, Heizungstyp, Verbrauch), Vertrag/Abrechnung eingeklappt.
+- **Sanfte Hinweise** statt harter Fehler (`src/lib/plausibility.js`).
 
 ### Bewusst noch nicht enthalten (spätere Stufen)
 

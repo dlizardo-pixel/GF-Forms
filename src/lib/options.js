@@ -1,16 +1,19 @@
 /**
  * Auswahl-Optionen für die Formulare (zentral, damit Oberfläche und CSV
  * dieselben Werte verwenden).
+ *
+ * Hinweis: Die Begriffe sind bewusst in Kundensprache gehalten
+ * (z. B. „Gas zentral", „Gaskombi") statt technischer Bezeichnungen.
  */
 
 export const HEATING_TYPES = [
-  'Gas',
+  'Gas zentral',
+  'Gaskombi',
   'Fernwärme',
-  'Blockheizkraftwerk',
   'Wärmepumpe',
-  'Ölheizung',
+  'Öl',
   'Holz-Pellets',
-  'Sonstiges',
+  'Was anderes / weiß nicht',
 ];
 
 // Vorgabe Energieträger auf Projektebene (entspricht den Heizungstypen).
@@ -18,13 +21,13 @@ export const ENERGY_TYPE_OPTIONS = ['(keine Vorgabe)', ...HEATING_TYPES];
 
 export const BILLING_CYCLES = ['(keine Angabe)', 'monatlich', 'quartalsweise', 'halbjährlich', 'jährlich'];
 
-// Sektorkopplung – wählbare Komponenten.
+// Sektorkopplung – wählbare Komponenten (Reihenfolge in Kundensprache).
 export const SK_COMPONENTS = [
   { key: 'waermepumpe', label: 'Wärmepumpe' },
-  { key: 'heizstab', label: 'Heizstab' },
-  { key: 'pufferspeicher', label: 'Pufferspeicher' },
-  { key: 'pv', label: 'PV-Anlage' },
+  { key: 'pv', label: 'Solaranlage (PV)' },
   { key: 'batterie', label: 'Batteriespeicher' },
+  { key: 'pufferspeicher', label: 'Pufferspeicher' },
+  { key: 'heizstab', label: 'Heizstab' },
 ];
 
-export const INSTALLATION_STATUS = ['in Betrieb', 'in Planung', 'unbekannt'];
+export const INSTALLATION_STATUS = ['läuft schon', 'in Planung', 'weiß nicht'];

@@ -17,10 +17,10 @@ export function checkConsumptionPerArea(system) {
 
   const perM2 = kwh / area;
   if (perM2 < 20) {
-    return `Der Verbrauch wirkt mit ca. ${Math.round(perM2)} kWh/m²·a sehr niedrig. Bitte prüfen Sie Wert und Einheit.`;
+    return 'Die Zahl wirkt etwas niedrig für die Fläche — passt das, oder ist da ein Dreher drin?';
   }
   if (perM2 > 350) {
-    return `Der Verbrauch wirkt mit ca. ${Math.round(perM2)} kWh/m²·a sehr hoch. Bitte prüfen Sie Wert und Einheit.`;
+    return 'Die Zahl wirkt etwas hoch für die Fläche — passt das, oder ist da ein Dreher drin?';
   }
   return null;
 }
@@ -31,7 +31,7 @@ export function checkConstructionYear(year) {
   if (!y) return null;
   const now = new Date().getFullYear();
   if (y < 1850 || y > now) {
-    return `Das Baujahr/Sanierungsjahr ${y} wirkt ungewöhnlich. Bitte prüfen.`;
+    return `${y} als Baujahr/Sanierung — ist da vielleicht ein Tippfehler drin?`;
   }
   return null;
 }

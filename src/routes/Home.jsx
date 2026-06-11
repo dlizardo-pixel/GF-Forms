@@ -3,7 +3,7 @@ import { TopBar } from '../components/Layout.jsx';
 import { ICONS } from '../lib/brandAssets.js';
 
 /**
- * Startseite mit Auswahl des Formulartyps.
+ * Startseite mit Auswahl in Kundensprache.
  * Etwaige Query-Parameter (für vorausgefüllte Links, Stufe 2) werden an die
  * Formularseiten weitergereicht.
  */
@@ -15,38 +15,31 @@ export default function Home() {
       <TopBar />
       <div className="gf-center">
         <div className="gf-hero">
-          <span className="gf-eyebrow">Green Fusion</span>
-          <h1>Erfassen Sie Ihre Heizungsanlagen – schnell und einfach</h1>
-          <p>
-            Mit Ihren Angaben erstellen wir eine Wirtschaftlichkeitsanalyse für Ihre Liegenschaften.
-            Wählen Sie den passenden Formulartyp:
-          </p>
+          <h1>Worum geht's bei Ihnen?</h1>
+          <p>Damit wir Ihnen die richtigen Fragen stellen — und nicht mehr als nötig.</p>
 
           <div className="gf-typecards">
             <Link to={`/standard${search}`} className="gf-typecard">
               <img src={ICONS.heating} alt="" className="gf-typecard-icon" />
-              <span className="gf-badge">Heizungsoptimierung</span>
-              <h2>Standard Business Case</h2>
+              <h2>Klassische Heizung optimieren</h2>
               <p>
-                Für die klassische Heizungsoptimierung – ideal auch für viele Liegenschaften
-                (z. B. Gas, Fernwärme, BHKW, Öl oder Pellets).
+                Gas, Fernwärme oder Öl. Keine Wärmepumpe, kein Solarstrom im Spiel — Sie wollen einfach, dass
+                die Anlagen sparsamer laufen.
               </p>
             </Link>
 
             <Link to={`/sektorkopplung${search}`} className="gf-typecard">
               <img src={ICONS.heatpumpLg} alt="" className="gf-typecard-icon" />
-              <span className="gf-badge">Wärmepumpe · PV · Speicher</span>
-              <h2>Sektorkopplung</h2>
+              <h2>Wärmepumpe und/oder Solar mitdenken</h2>
               <p>
-                Für Anlagen mit Wärmepumpe, PV-Anlage und/oder Batteriespeicher – mit Erfassung der
-                einzelnen Komponenten.
+                Sie haben eine Wärmepumpe, eine PV-Anlage oder beides — und wollen, dass die sinnvoll
+                zusammenspielen.
               </p>
             </Link>
           </div>
 
-          <p style={{ fontSize: 13, marginTop: 32 }}>
-            Ihre Daten werden ausschließlich zur Erstellung der Wirtschaftlichkeitsanalyse durch Green
-            Fusion verarbeitet.
+          <p style={{ fontSize: 14, marginTop: 28 }}>
+            Nicht sicher? Nehmen Sie das Erste — den Rest klären wir gemeinsam. Wir müssen da nichts hetzen.
           </p>
         </div>
       </div>

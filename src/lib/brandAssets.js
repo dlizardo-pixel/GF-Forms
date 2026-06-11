@@ -38,13 +38,13 @@ export const ICONS = {
 
 /** Heizungstyp → passendes Icon (nur dort, wo eine sinnvolle Entsprechung existiert). */
 export const HEATING_TYPE_ICON = {
-  Gas: ICONS.gas,
+  'Gas zentral': ICONS.gas,
+  Gaskombi: ICONS.gas,
   Fernwärme: ICONS.heating,
-  Blockheizkraftwerk: ICONS.power,
   Wärmepumpe: ICONS.heatpumpSm,
-  Ölheizung: ICONS.heating,
+  Öl: ICONS.heating,
   'Holz-Pellets': ICONS.heating,
-  Sonstiges: ICONS.tools,
+  'Was anderes / weiß nicht': ICONS.tools,
 };
 
 /** Sektorkopplungs-Komponente → Icon. */

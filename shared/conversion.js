@@ -27,17 +27,16 @@ export const ENERGY_UNITS = {
  */
 export function unitKeyForHeatingType(heatingType) {
   switch (heatingType) {
-    case 'Gas':
-      return 'gas';
-    case 'Blockheizkraftwerk':
-      return 'gas'; // BHKW wird i. d. R. mit Gas (m³) betrieben
+    case 'Gas zentral':
+    case 'Gaskombi':
+      return 'gas'; // Gas wird in m³ erfasst
     case 'Fernwärme':
       return 'fernwaerme';
     case 'Wärmepumpe':
       return 'waermepumpe';
     case 'Holz-Pellets':
       return 'pellets';
-    case 'Ölheizung':
+    case 'Öl':
       return 'oel';
     default:
       return 'sonstiges';

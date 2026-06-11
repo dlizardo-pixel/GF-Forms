@@ -187,15 +187,15 @@ export function buildSummaryHtml(data) {
 /** Freundliche Bestätigungs-E-Mail an den Kunden. */
 export function buildConfirmationHtml(name) {
   const greeting = isFilled(name) ? `Hallo ${esc(name)},` : 'Hallo,';
-  return wrapHtml('Vielen Dank für Ihre Angaben', `
+  return wrapHtml('Alles angekommen — danke.', `
     <p>${greeting}</p>
-    <p>vielen Dank! Ihre Angaben zu Ihren Heizungsanlagen sind <strong>vollständig bei uns angekommen</strong>.</p>
-    <p>Unser Team erstellt daraus eine Wirtschaftlichkeitsanalyse und meldet sich bei Ihnen.
-       Sie müssen nichts weiter tun.</p>
-    <p style="margin-top:24px;">Herzliche Grüße<br/>Ihr Green-Fusion-Team</p>
+    <p>Ihre Angaben sind bei uns angekommen. Wir rechnen jetzt durch, was Ihre Anlagen sparen können,
+       und melden uns dann bei Ihnen.</p>
+    <p>Kein Verkaufsgespräch — erstmal nur die Zahlen. Wenn vorher etwas unklar ist oder Sie etwas
+       nachreichen möchten, antworten Sie einfach auf diese Mail.</p>
+    <p style="margin-top:24px;">Viele Grüße<br/>Ihr Team von Green Fusion</p>
     <p style="font-size:12px;color:#6b8584;margin-top:24px;">
-      Diese E-Mail wurde automatisch versendet. Ihre Daten werden ausschließlich zur Erstellung
-      der Wirtschaftlichkeitsanalyse durch Green Fusion verarbeitet.
+      Diese Mail kam automatisch. Ihre Daten nutzen wir nur, um Ihre mögliche Ersparnis zu berechnen.
     </p>
   `);
 }
