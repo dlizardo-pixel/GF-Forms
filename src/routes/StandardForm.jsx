@@ -10,7 +10,7 @@ import { ENERGY_TYPE_OPTIONS, BILLING_CYCLES } from '../lib/options.js';
 import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
-import { GF_CONTACT_EMAIL, GUIDED_MAX, PORTFOLIO_HINT_FROM } from '../lib/config.js';
+import { GF_CONTACT_EMAIL, GUIDED_MAX } from '../lib/config.js';
 
 const DRAFT_KEY = 'gf-standard-draft';
 
@@ -114,10 +114,12 @@ export default function StandardForm() {
         (project.contactName || ''),
     )}`;
 
+  const wideShell = phase === 'systems' && mode === 'grid';
+
   return (
     <div className="gf-page">
       <TopBar />
-      <div className="gf-shell">
+      <div className={'gf-shell' + (wideShell ? ' gf-shell-wide' : '')}>
         {phase === 'project' && <Progress percent={5} label="Schritt 1: ein paar Eckdaten zu Ihnen" />}
         {phase === 'systems' && mode === 'guided' && (
           <Progress percent={10 + (current / count) * 80} label={`Anlage ${current + 1} von ${count}`} />
@@ -204,6 +206,8 @@ export default function StandardForm() {
               </span>
               <h1 className="gf-step-title" style={{ marginBottom: 16 }}>Erzählen Sie uns von dieser Anlage</h1>
 
+              <Notausgang mailtoHref={mailtoHref} compact />
+
               {current > 0 && (
                 <button
                   type="button"
@@ -247,20 +251,7 @@ export default function StandardForm() {
                 überall okay — wir prüfen die Zahlen später gemeinsam.
               </p>
 
-              {totalCount >= PORTFOLIO_HINT_FROM && (
-                <Hint kind="info">
-                  <div>
-                    <strong>Sie haben viele Anlagen?</strong> Wahrscheinlich liegt das längst in einer Liste bei
-                    Ihnen. Schicken Sie sie uns einfach so, wie Sie sie haben — Excel, PDF, egal. Wir kümmern uns
-                    um den Rest.
-                    <div style={{ marginTop: 8 }}>
-                      <a className="gf-btn gf-btn-primary" href={mailtoHref}>
-                        Liste per Mail schicken
-                      </a>
-                    </div>
-                  </div>
-                </Hint>
-              )}
+              <Notausgang mailtoHref={mailtoHref} />
 
               <SystemGrid systems={systems} setSystems={setSystems} project={project} />
 
@@ -315,6 +306,28 @@ export default function StandardForm() {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+/**
+ * Notausgang: „Liste per Mail schicken". Für alle sichtbar – wer schon eine
+ * Liste hat, muss nichts abtippen. `compact` = schlankere Variante (geführter Modus).
+ */
+function Notausgang({ mailtoHref, compact }) {
+  return (
+    <Hint kind="info">
+      <div>
+        <strong>Sie haben das schon in einer Liste?</strong>{' '}
+        {compact
+          ? 'Dann tippen Sie nichts ab — schicken Sie sie uns einfach (Excel, PDF, egal).'
+          : 'Wahrscheinlich liegt das längst bei Ihnen vor. Schicken Sie sie uns einfach so, wie Sie sie haben — Excel, PDF, egal. Wir kümmern uns um den Rest.'}
+        <div style={{ marginTop: 8 }}>
+          <a className="gf-btn gf-btn-primary" href={mailtoHref}>
+            Liste per Mail schicken
+          </a>
+        </div>
+      </div>
+    </Hint>
   );
 }
 

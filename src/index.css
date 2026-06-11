@@ -131,6 +131,11 @@ a {
   margin: 0 auto;
   padding: var(--gf-space-8) var(--gf-space-6) var(--gf-space-16);
 }
+/* Breitere Variante für den Tabellenmodus, damit alle Spalten ohne seitliches
+   Scrollen sichtbar sind. */
+.gf-shell-wide {
+  max-width: 1140px;
+}
 
 .gf-center {
   min-height: 100%;
@@ -540,6 +545,41 @@ table.gf-grid {
   width: 100%;
   font-size: 14px;
 }
+/* Anlagen-Tabelle: feste Spaltenbreiten füllen die (breite) Karte aus, statt zu
+   überlaufen. min-width hält sie auf schmalen Geräten scrollbar.
+   Spalte 2 „Straße" bekommt den verbleibenden Platz. */
+table.gf-grid-systems {
+  table-layout: fixed;
+  min-width: 720px;
+}
+table.gf-grid-systems th:nth-child(1),
+table.gf-grid-systems td:nth-child(1) {
+  width: 58px;
+}
+table.gf-grid-systems th:nth-child(3),
+table.gf-grid-systems td:nth-child(3) {
+  width: 76px;
+}
+table.gf-grid-systems th:nth-child(4),
+table.gf-grid-systems td:nth-child(4) {
+  width: 130px;
+}
+table.gf-grid-systems th:nth-child(5),
+table.gf-grid-systems td:nth-child(5) {
+  width: 150px;
+}
+table.gf-grid-systems th:nth-child(6),
+table.gf-grid-systems td:nth-child(6) {
+  width: 92px;
+}
+table.gf-grid-systems th:nth-child(7),
+table.gf-grid-systems td:nth-child(7) {
+  width: 140px;
+}
+table.gf-grid-systems th:nth-child(8),
+table.gf-grid-systems td:nth-child(8) {
+  width: 104px;
+}
 table.gf-grid th,
 table.gf-grid td {
   border-bottom: 1px solid var(--gf-polar-mist);
@@ -567,6 +607,8 @@ table.gf-grid td.gf-rownum {
 }
 table.gf-grid input,
 table.gf-grid select {
+  width: 100%;
+  min-width: 0;
   font-family: inherit;
   font-size: 14px;
   color: var(--gf-graphite);
@@ -574,7 +616,6 @@ table.gf-grid select {
   background: transparent;
   padding: 6px 8px;
   border-radius: var(--gf-radius-sm);
-  min-width: 120px;
 }
 table.gf-grid input:focus,
 table.gf-grid select:focus {
@@ -584,6 +625,14 @@ table.gf-grid select:focus {
 }
 .gf-grid-req {
   border-bottom: 2px solid var(--gf-glaciar-gray) !important;
+}
+.gf-col-num input,
+input.gf-col-num {
+  text-align: right;
+}
+.gf-col-actions {
+  white-space: nowrap;
+  text-align: center;
 }
 
 /* ---- Autocomplete ------------------------------------------------------- */
@@ -694,6 +743,25 @@ table.gf-grid select:focus {
   width: 20px;
   height: 20px;
   object-fit: contain;
+}
+
+/* ---- Modal / Dialog ----------------------------------------------------- */
+.gf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 39, 38, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: var(--gf-space-4);
+}
+.gf-modal {
+  max-width: 640px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: var(--gf-shadow-lg);
 }
 
 /* ---- Diverses ----------------------------------------------------------- */

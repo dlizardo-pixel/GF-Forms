@@ -12,4 +12,5 @@ export const GF_CONTACT_EMAIL = import.meta.env.VITE_GF_CONTACT_EMAIL || 'd.liza
 export const GUIDED_MAX = 3;
 
 // Ab wie vielen Anlagen blenden wir den „Notausgang" (Liste per Mail) ein?
-export const PORTFOLIO_HINT_FROM = 15;
+// 0 = immer (für alle), unabhängig von der Anzahl.
+export const PORTFOLIO_HINT_FROM = 0;

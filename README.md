@@ -300,8 +300,16 @@ GF-Forms/
 ### Weniger Abbrüche – was eingebaut ist
 
 - **Tabelle als Hauptmodus** ab 4 Anlagen (wie die gewohnte Excel-Liste), mit
-  **„Aus Excel einfügen"**, Zeile duplizieren / „Werte von oben übernehmen",
-  Zeilen hinzufügen/löschen und aufklappbarer Detailzeile für seltene Felder.
+  Zeile duplizieren / „Werte von oben übernehmen", Zeilen hinzufügen/löschen und
+  aufklappbarer Detailzeile für seltene Felder.
+- **Liste importieren (Excel/CSV)**: Datei hochladen (.xlsx oder .csv) oder
+  Tabelle einfügen. Die Spalten werden **automatisch erkannt** (auch bei anderer
+  Reihenfolge/Benennung), deutsche Zahlenformate (`1.200,5`) bereinigt und
+  Heizungs-Begriffe (`Erdgas`, `fw`, …) zugeordnet. Vor dem Übernehmen gibt es
+  eine **Vorschau mit korrigierbarer Spaltenzuordnung** — Format-Probleme fallen
+  so sofort auf. Logik: `src/lib/importParse.js`, Dialog: `src/components/standard/ImportModal.jsx`.
+- **„Liste per Mail schicken"** (Notausgang) ist für alle sichtbar — wer schon
+  eine Liste hat, muss nichts abtippen.
 - **Zwischenspeichern im Browser** (`localStorage`): unterbrechen und später
   weitermachen; nach dem Absenden wird der Entwurf gelöscht. Logik in
   `src/lib/draft.js`.

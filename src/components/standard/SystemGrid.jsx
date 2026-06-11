@@ -6,36 +6,10 @@ import { Hint } from '../Fields.jsx';
 import { isSystemComplete, makeSystem } from '../../lib/standardModel.js';
 import { systemHints } from '../../lib/plausibility.js';
 import SystemExtraFields from './SystemExtraFields.jsx';
+import ImportModal from './ImportModal.jsx';
 
 // Anzahl der Kernspalten (für colSpan der Detailzeile).
 const COL_COUNT = 8;
-
-// Lockere Zuordnung getippter/eingefügter Heizungs-Begriffe → unsere Werte.
-const HEATING_SYNONYMS = {
-  gas: 'Gas zentral',
-  'gas zentral': 'Gas zentral',
-  gaskombi: 'Gaskombi',
-  'gas-kombi': 'Gaskombi',
-  fernwärme: 'Fernwärme',
-  fernwaerme: 'Fernwärme',
-  wärmepumpe: 'Wärmepumpe',
-  waermepumpe: 'Wärmepumpe',
-  wp: 'Wärmepumpe',
-  öl: 'Öl',
-  oel: 'Öl',
-  ölheizung: 'Öl',
-  pellets: 'Holz-Pellets',
-  'holz-pellets': 'Holz-Pellets',
-  holz: 'Holz-Pellets',
-};
-
-function normalizeHeating(raw) {
-  const v = String(raw || '').trim();
-  if (!v) return '';
-  const hit = HEATING_TYPES.find((h) => h.toLowerCase() === v.toLowerCase());
-  if (hit) return hit;
-  return HEATING_SYNONYMS[v.toLowerCase()] || v;
-}
 
 /**
  * Tabellen-/Rastermodus – HAUPTMODUS für die Anlagen.
@@ -44,8 +18,7 @@ function normalizeHeating(raw) {
  */
 export default function SystemGrid({ systems, setSystems, project }) {
   const [expanded, setExpanded] = useState(() => new Set());
-  const [pasteOpen, setPasteOpen] = useState(false);
-  const [pasteText, setPasteText] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
 
   const updateSystem = (index, partial) =>
     setSystems((arr) => arr.map((s, i) => (i === index ? { ...s, ...partial } : s)));
@@ -81,45 +54,20 @@ export default function SystemGrid({ systems, setSystems, project }) {
     }
   }
 
-  // ---- Aus Excel einfügen ----
-  function applyPaste() {
-    const lines = pasteText
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (lines.length === 0) {
-      setPasteOpen(false);
-      return;
-    }
-    const newRows = lines.map((line) => {
-      const cells = line.split('\t');
-      const s = makeSystem(project);
-      const [street, plz, city, heating, area, consumption] = cells;
-      if (street) s.streetHeating = street.trim();
-      if (plz) s.plz = plz.trim();
-      if (city) s.city = city.trim();
-      if (heating) s.heatingType = normalizeHeating(heating);
-      if (area) s.heatedAreaM2 = area.replace(/[^\d.,]/g, '').replace(',', '.');
-      if (consumption) s.consumptionLastYear = consumption.replace(/[^\d.,]/g, '').replace(',', '.');
-      return s;
-    });
-
+  // Import aus Excel/CSV/Text: Zeilen anhängen und fehlende Städte nachladen.
+  function handleImport(newSystems) {
     setSystems((arr) => {
       const startIndex = arr.length;
-      const merged = [...arr, ...newRows];
-      // Fehlende Städte aus der PLZ nachladen (asynchron, unkritisch).
-      newRows.forEach((s, k) => {
+      newSystems.forEach((s, k) => {
         if (s.plz && !s.city && /^\d{5}$/.test(s.plz)) {
           lookupPlz(s.plz).then((res) => {
             if (res) updateSystem(startIndex + k, { city: res.city, lat: res.lat, lng: res.lng });
           });
         }
       });
-      return merged;
+      return [...arr, ...newSystems];
     });
-
-    setPasteText('');
-    setPasteOpen(false);
+    setImportOpen(false);
   }
 
   return (
@@ -134,13 +82,13 @@ export default function SystemGrid({ systems, setSystems, project }) {
         <button type="button" className="gf-btn gf-btn-ghost" onClick={addRow}>
           + Anlage hinzufügen
         </button>
-        <button type="button" className="gf-btn gf-btn-ghost" onClick={() => setPasteOpen(true)}>
-          Aus Excel einfügen
+        <button type="button" className="gf-btn gf-btn-ghost" onClick={() => setImportOpen(true)}>
+          Liste importieren (Excel/CSV)
         </button>
       </div>
 
       <div className="gf-grid-wrap">
-        <table className="gf-grid">
+        <table className="gf-grid gf-grid-systems">
           <thead>
             <tr>
               <th>Nr.</th>
@@ -180,19 +128,17 @@ export default function SystemGrid({ systems, setSystems, project }) {
                         className="gf-grid-req"
                         value={s.streetHeating}
                         onChange={(e) => updateSystem(i, { streetHeating: e.target.value })}
-                        style={{ minWidth: 160 }}
                       />
                     </td>
                     <td>
                       <input
-                        className="gf-grid-req"
+                        className="gf-grid-req gf-col-plz"
                         value={s.plz}
                         onChange={(e) => handlePlz(i, e.target.value)}
-                        style={{ minWidth: 70 }}
                       />
                     </td>
                     <td>
-                      <input value={s.city} onChange={(e) => updateSystem(i, { city: e.target.value })} />
+                      <input className="gf-col-city" value={s.city} onChange={(e) => updateSystem(i, { city: e.target.value })} />
                     </td>
                     <td>
                       <select
@@ -210,30 +156,28 @@ export default function SystemGrid({ systems, setSystems, project }) {
                     </td>
                     <td>
                       <input
-                        className="gf-grid-req"
+                        className="gf-grid-req gf-col-num"
                         type="number"
                         value={s.heatedAreaM2}
                         onChange={(e) => updateSystem(i, { heatedAreaM2: e.target.value })}
-                        style={{ minWidth: 90 }}
                       />
                     </td>
                     <td>
                       <input
-                        className="gf-grid-req"
+                        className="gf-grid-req gf-col-num"
                         type="number"
                         value={s.consumptionLastYear}
                         onChange={(e) => updateSystem(i, { consumptionLastYear: e.target.value })}
-                        style={{ minWidth: 120 }}
                         title={`Einheit: ${unit}`}
                         placeholder={unit}
                       />
                     </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
+                    <td className="gf-col-actions">
                       {i > 0 && (
                         <button
                           type="button"
                           className="gf-btn gf-btn-text"
-                          style={{ fontSize: 13 }}
+                          style={{ fontSize: 15, padding: 2 }}
                           onClick={() => copyFromAbove(i)}
                           title="Werte von oben übernehmen (ohne Adresse)"
                         >
@@ -243,7 +187,7 @@ export default function SystemGrid({ systems, setSystems, project }) {
                       <button
                         type="button"
                         className="gf-btn gf-btn-text"
-                        style={{ fontSize: 13 }}
+                        style={{ fontSize: 15, padding: 2 }}
                         onClick={() => duplicateRow(i)}
                         title="Zeile duplizieren"
                       >
@@ -253,7 +197,7 @@ export default function SystemGrid({ systems, setSystems, project }) {
                         <button
                           type="button"
                           className="gf-btn gf-btn-text"
-                          style={{ fontSize: 13, color: 'var(--gf-error)' }}
+                          style={{ fontSize: 15, padding: 2, color: 'var(--gf-error)' }}
                           onClick={() => deleteRow(i)}
                           title="Zeile löschen"
                         >
@@ -281,48 +225,7 @@ export default function SystemGrid({ systems, setSystems, project }) {
         </table>
       </div>
 
-      {/* Einfügen-Dialog */}
-      {pasteOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(6,39,38,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-            padding: 16,
-          }}
-          onClick={() => setPasteOpen(false)}
-        >
-          <div className="gf-card" style={{ maxWidth: 560, width: '100%' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0 }}>Aus Excel einfügen</h3>
-            <p className="gf-help" style={{ marginTop: 0 }}>
-              Markieren Sie in Ihrer Liste die Spalten in dieser Reihenfolge, kopieren Sie sie und fügen Sie
-              sie unten ein (eine Zeile pro Anlage):
-            </p>
-            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--gf-brand-dark-grey)' }}>
-              Straße &amp; Hausnr. · PLZ · Stadt · Heizung · Fläche m² · Verbrauch letztes Jahr
-            </p>
-            <textarea
-              className="gf-textarea"
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder={'Musterstraße 12\t10115\tBerlin\tGas zentral\t1200\t150000'}
-              style={{ minHeight: 140, fontFamily: 'monospace', fontSize: 13 }}
-            />
-            <div className="gf-actions">
-              <button type="button" className="gf-btn gf-btn-ghost" onClick={() => setPasteOpen(false)}>
-                Abbrechen
-              </button>
-              <button type="button" className="gf-btn gf-btn-primary" onClick={applyPaste}>
-                Zeilen einfügen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {importOpen && <ImportModal project={project} onImport={handleImport} onClose={() => setImportOpen(false)} />}
     </div>
   );
 }
