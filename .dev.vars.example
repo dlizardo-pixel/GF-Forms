@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------
+# Lokale Umgebungsvariablen für `npm run pages:dev` (Wrangler / Cloudflare).
+#
+# So benutzen:
+#   1. Diese Datei nach ".dev.vars" KOPIEREN (ohne ".example").
+#   2. Werte eintragen.
+#   3. Die echte ".dev.vars" wird NICHT eingecheckt (steht in .gitignore).
+#
+# Lässt man BREVO_API_KEY leer, läuft alles im "Mock-Modus": es wird KEINE
+# echte E-Mail verschickt, die App lässt sich aber komplett durchklicken.
+# ---------------------------------------------------------------------------
+
+# API-Schlüssel von Brevo (Secret). Leer lassen = Mock-Modus.
+BREVO_API_KEY=
+
+# Empfänger bei Green Fusion (erhält Zusammenfassung + CSV-Anhang).
+GF_RECIPIENT_EMAIL=anfragen@green-fusion.de
+
+# Verifizierte Absenderadresse (Domain bei Brevo per SPF/DKIM freigeschaltet).
+BREVO_SENDER_EMAIL=noreply@green-fusion.de
+
+# Anzeigename des Absenders (optional).
+BREVO_SENDER_NAME=Green Fusion
