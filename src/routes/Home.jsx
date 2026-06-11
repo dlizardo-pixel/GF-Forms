@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { TopBar } from '../components/Layout.jsx';
+import { ICONS } from '../lib/brandAssets.js';
 
 /**
  * Startseite mit Auswahl des Formulartyps.
@@ -23,6 +24,7 @@ export default function Home() {
 
           <div className="gf-typecards">
             <Link to={`/standard${search}`} className="gf-typecard">
+              <img src={ICONS.heating} alt="" className="gf-typecard-icon" />
               <span className="gf-badge">Heizungsoptimierung</span>
               <h2>Standard Business Case</h2>
               <p>
@@ -32,6 +34,7 @@ export default function Home() {
             </Link>
 
             <Link to={`/sektorkopplung${search}`} className="gf-typecard">
+              <img src={ICONS.heatpumpLg} alt="" className="gf-typecard-icon" />
               <span className="gf-badge">Wärmepumpe · PV · Speicher</span>
               <h2>Sektorkopplung</h2>
               <p>

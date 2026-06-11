@@ -1,23 +1,14 @@
-/** Gemeinsame Layout-Bausteine: Kopfzeile, Fortschrittsanzeige, animierte Schritte. */
+/** Gemeinsame Layout-Bausteine: Kopfzeile, Fortschrittsanzeige, Schritt-Übergang. */
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { LOGOS } from '../lib/brandAssets.js';
 
-export function Logo() {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <rect width="64" height="64" rx="14" fill="#062726" />
-      <path d="M44 20c-12 0-20 8-20 18 0 1.5.2 3 .6 4.3C18 39 14 33 14 26c0 0 12 2 16-8 0 0 8 0 14 2z" fill="#3AD99F" />
-      <circle cx="38" cy="40" r="6" fill="#3AD99F" />
-    </svg>
-  );
-}
-
+/** Kopfzeile mit offiziellem GreenFusion-Logo (Green-Variante auf hellem Grund). */
 export function TopBar() {
   return (
     <div className="gf-topbar">
-      <Link to="/" className="gf-logo">
-        <Logo />
-        <span>Green Fusion · Anlagen-Erfassung</span>
+      <Link to="/" className="gf-logo" aria-label="GreenFusion – Startseite">
+        <img src={LOGOS.horizontalGreen} alt="GreenFusion" />
       </Link>
     </div>
   );
@@ -35,15 +26,18 @@ export function Progress({ percent, label }) {
   );
 }
 
-/** Animierter Schritt-Wrapper – sanfte Übergänge wie bei Typeform. */
+/**
+ * Schritt-Wrapper mit leichtem Übergang (kein dekoratives Animieren):
+ * 180 ms Fade + minimaler Versatz, Easing nach Design System v2.
+ */
 export function Step({ children, stepKey }) {
   return (
     <motion.div
       key={stepKey}
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
     >
       {children}
     </motion.div>

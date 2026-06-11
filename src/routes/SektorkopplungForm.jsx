@@ -20,6 +20,10 @@ import {
 } from '../../shared/manufacturers.js';
 import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
+import { COMPONENT_ICON } from '../lib/brandAssets.js';
+
+// Komponenten-Optionen mit Brand-Icons.
+const COMPONENT_OPTIONS = SK_COMPONENTS.map((c) => ({ ...c, icon: COMPONENT_ICON[c.key] }));
 
 /** Schalter „vorhanden / geplant" je gewählter Komponente. */
 function StatusToggle({ value, onChange }) {
@@ -123,7 +127,7 @@ export default function SektorkopplungForm() {
               label="Welche Komponenten gibt es (oder sind geplant)?"
               value={data.selectedComponents}
               onChange={set('selectedComponents')}
-              options={SK_COMPONENTS}
+              options={COMPONENT_OPTIONS}
               help="Mehrfachauswahl möglich."
             />
 

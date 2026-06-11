@@ -67,9 +67,14 @@ export function validateSubmission(data) {
   return errors;
 }
 
+// Offizielles GreenFusion-Logo (White-Variante für dunklen Header).
+const LOGO_WHITE =
+  'https://raw.githubusercontent.com/dlizardo-pixel/Ressources-Greenfusion/main/GreenFusion-Logo-horizontal-white-RGB.svg';
+
 const wrapHtml = (title, inner) => `
 <div style="font-family:'Source Sans 3',Arial,sans-serif;color:#324B4A;max-width:680px;margin:0 auto;">
   <div style="background:#062726;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;">
+    <img src="${LOGO_WHITE}" alt="GreenFusion" height="28" style="display:block;margin-bottom:12px;" />
     <h1 style="margin:0;font-size:20px;font-weight:600;">${esc(title)}</h1>
   </div>
   <div style="border:1px solid #E7FAF3;border-top:none;padding:20px 24px;border-radius:0 0 12px 12px;">

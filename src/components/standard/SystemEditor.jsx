@@ -11,6 +11,10 @@ import PlzCity from '../PlzCity.jsx';
 import { HEATING_TYPES, BILLING_CYCLES } from '../../lib/options.js';
 import { ENERGY_UNITS, unitKeyForHeatingType, describeConversion } from '../../../shared/conversion.js';
 import { systemHints } from '../../lib/plausibility.js';
+import { HEATING_TYPE_ICON } from '../../lib/brandAssets.js';
+
+// Heizungstypen mit passenden Brand-Icons als Auswahl-Optionen.
+const HEATING_TYPE_OPTIONS = HEATING_TYPES.map((t) => ({ value: t, label: t, icon: HEATING_TYPE_ICON[t] }));
 
 /**
  * Geführter Editor für EINE Anlage (Modus für wenige Anlagen).
@@ -58,7 +62,7 @@ export default function SystemEditor({ system, onChange }) {
         label="Heizungstyp"
         value={system.heatingType}
         onChange={set('heatingType')}
-        options={HEATING_TYPES}
+        options={HEATING_TYPE_OPTIONS}
         required
       />
 

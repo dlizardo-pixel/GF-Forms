@@ -81,9 +81,10 @@ export function ChoiceField({ label, value, onChange, options, required, help })
       </label>
       {help && <p className="gf-help">{help}</p>}
       <div className="gf-choices">
-        {options.map((opt, i) => {
+        {options.map((opt) => {
           const val = typeof opt === 'string' ? opt : opt.value;
           const lbl = typeof opt === 'string' ? opt : opt.label;
+          const icon = typeof opt === 'string' ? null : opt.icon;
           const selected = value === val;
           return (
             <button
@@ -92,7 +93,8 @@ export function ChoiceField({ label, value, onChange, options, required, help })
               className={`gf-choice${selected ? ' is-selected' : ''}`}
               onClick={() => onChange(val)}
             >
-              <span className="gf-choice-key">{String.fromCharCode(65 + i)}</span>
+              <span className="gf-radio" aria-hidden="true" />
+              {icon && <img src={icon} alt="" className="gf-choice-icon" />}
               {lbl}
             </button>
           );
@@ -159,6 +161,7 @@ export function MultiSelectField({ label, value = [], onChange, options, help })
         {options.map((opt) => {
           const key = typeof opt === 'string' ? opt : opt.key;
           const lbl = typeof opt === 'string' ? opt : opt.label;
+          const icon = typeof opt === 'string' ? null : opt.icon;
           return (
             <button
               type="button"
@@ -166,6 +169,7 @@ export function MultiSelectField({ label, value = [], onChange, options, help })
               className={`gf-chip${value.includes(key) ? ' is-selected' : ''}`}
               onClick={() => toggle(key)}
             >
+              {icon && <img src={icon} alt="" className="gf-chip-icon" />}
               {lbl}
             </button>
           );
