@@ -22,6 +22,7 @@ import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { COMPONENT_ICON } from '../lib/brandAssets.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
+import { scheduleCloudSave, getCloudId, clearCloudId } from '../lib/draftSync.js';
 import { GF_CONTACT_EMAIL } from '../lib/config.js';
 import MailListToast from '../components/MailListToast.jsx';
 
@@ -83,6 +84,8 @@ export default function SektorkopplungForm() {
 
   useEffect(() => {
     saveDraft(DRAFT_KEY, { data });
+    const hasContent = !!(data.company || data.contactName || data.contactEmail || data.streetHeating);
+    scheduleCloudSave(DRAFT_KEY, 'sektorkopplung', data, hasContent);
   }, [data]);
 
   const set = (key) => (val) => setData((d) => ({ ...d, [key]: val }));
@@ -96,8 +99,14 @@ export default function SektorkopplungForm() {
     setErrors([]);
     setSubmitting(true);
     try {
-      const res = await submitForm({ type: 'sektorkopplung', ...data, privacyConsent: consent });
+      const res = await submitForm({
+        type: 'sektorkopplung',
+        ...data,
+        privacyConsent: consent,
+        draftId: getCloudId(DRAFT_KEY),
+      });
       clearDraft(DRAFT_KEY);
+      clearCloudId(DRAFT_KEY);
       navigate('/danke', { state: { mock: res.mock } });
     } catch (err) {
       setErrors(err.errors || [err.message]);
@@ -127,6 +136,7 @@ export default function SektorkopplungForm() {
               style={{ padding: 0 }}
               onClick={() => {
                 clearDraft(DRAFT_KEY);
+                clearCloudId(DRAFT_KEY);
                 window.location.reload();
               }}
             >
@@ -141,6 +151,10 @@ export default function SektorkopplungForm() {
             <p className="gf-step-sub">
               Wir blenden nur die Fragen ein, die zu Ihnen passen. Schätzen ist okay — den Rest klären wir
               gemeinsam.
+            </p>
+            <p className="gf-help">
+              Ihre Eingaben werden automatisch und sicher (EU) zwischengespeichert, damit nichts verloren geht
+              — und nach 30 Tagen automatisch gelöscht.
             </p>
 
             {/* ---- Standort & Kontakt ---- */}

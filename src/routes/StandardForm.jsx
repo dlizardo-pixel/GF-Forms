@@ -10,6 +10,7 @@ import { ENERGY_TYPE_OPTIONS, BILLING_CYCLES } from '../lib/options.js';
 import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
+import { scheduleCloudSave, getCloudId, clearCloudId } from '../lib/draftSync.js';
 import { GF_CONTACT_EMAIL, GUIDED_MAX } from '../lib/config.js';
 import MailListToast from '../components/MailListToast.jsx';
 
@@ -41,9 +42,13 @@ export default function StandardForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
 
-  // Zwischenspeichern im Browser bei jeder Änderung.
+  // Zwischenspeichern im Browser + (entprellt) in der Cloud bei jeder Änderung.
   useEffect(() => {
     saveDraft(DRAFT_KEY, { phase, project, systems, current });
+    const hasContent =
+      !!(project.company || project.contactName || project.contactEmail) ||
+      systems.some((s) => s.streetHeating || s.plz || s.heatedAreaM2 || s.consumptionLastYear);
+    scheduleCloudSave(DRAFT_KEY, 'standard', { project, systems }, hasContent);
   }, [phase, project, systems, current]);
 
   const count = Math.max(1, Math.min(parseInt(project.systemCount, 10) || 1, 1000));
@@ -53,6 +58,7 @@ export default function StandardForm() {
 
   function resetAll() {
     clearDraft(DRAFT_KEY);
+    clearCloudId(DRAFT_KEY);
     setProject(defaultProject);
     setSystems([]);
     setCurrent(0);
@@ -94,8 +100,15 @@ export default function StandardForm() {
     setErrors([]);
     setSubmitting(true);
     try {
-      const res = await submitForm({ type: 'standard', project, systems, privacyConsent: consent });
+      const res = await submitForm({
+        type: 'standard',
+        project,
+        systems,
+        privacyConsent: consent,
+        draftId: getCloudId(DRAFT_KEY),
+      });
       clearDraft(DRAFT_KEY);
+      clearCloudId(DRAFT_KEY);
       navigate('/danke', { state: { mock: res.mock } });
     } catch (err) {
       setErrors(err.errors || [err.message]);
@@ -152,6 +165,10 @@ export default function StandardForm() {
                 Wir wissen, Formulare sind selten ein Vergnügen. Wir halten's kurz: ein paar Eckdaten zu Ihren
                 Anlagen, damit wir Ihnen schwarz auf weiß ausrechnen können, was Sie sparen. Schätzen reicht
                 völlig — den Rest klären wir gemeinsam. Rechnen Sie mit etwa 2 Minuten pro Anlage.
+              </p>
+              <p className="gf-help">
+                Ihre Eingaben werden automatisch und sicher (EU) zwischengespeichert, damit nichts verloren
+                geht — und nach 30 Tagen automatisch gelöscht.
               </p>
 
               <TextField label="Wie heißen Sie?" value={project.contactName} onChange={setProjectField('contactName')} required />

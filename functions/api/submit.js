@@ -27,6 +27,7 @@
  */
 
 import { buildSubmission } from '../../shared/submission.js';
+import { markSubmitted } from '../_lib/store.js';
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 
@@ -78,6 +79,17 @@ export async function onRequestPost(context) {
   const result = buildSubmission(data);
   if (!result.valid) {
     return json({ ok: false, errors: result.errors }, 422);
+  }
+
+  // Einreichung in der Datenbank festhalten (best effort – stört den Versand nicht).
+  // Aktualisiert einen ggf. vorhandenen Entwurf (data.draftId) auf 'submitted'.
+  if (env.DB) {
+    try {
+      await markSubmitted(env.DB, { id: data.draftId, type: data.type, data });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('D1-Speicherung der Einreichung fehlgeschlagen:', err);
+    }
   }
 
   const apiKey = env.BREVO_API_KEY;

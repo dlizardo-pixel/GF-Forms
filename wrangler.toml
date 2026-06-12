@@ -1,0 +1,18 @@
+# Cloudflare-Konfiguration für lokale Funktions-/D1-Tests (wrangler pages dev)
+# und für die D1-Bindung in der Produktion.
+#
+# WICHTIG:
+#  - "database_id" mit der ID aus `wrangler d1 create gf-forms-db` ersetzen.
+#  - In den Cloudflare-Pages-Projekteinstellungen muss dieselbe D1-Datenbank
+#    unter dem Bindungsnamen "DB" gebunden sein (Settings → Functions → D1).
+#  - Secrets (ADMIN_PASSWORD, BREVO_API_KEY, …) NICHT hier eintragen, sondern
+#    als Umgebungsvariablen/Secrets in Cloudflare bzw. lokal in .dev.vars.
+
+name = "gf-forms"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gf-forms-db"
+database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
