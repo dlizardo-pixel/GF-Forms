@@ -144,6 +144,26 @@ export function looksLikeHeader(row) {
   return lineFieldHits(row || []) >= 2;
 }
 
+/**
+ * Zerlegt eine zusammengeschriebene Adresse in Straße / PLZ / Stadt.
+ * Beispiel: „Musterstr. 12, 10115 Berlin" → { street:'Musterstr. 12', plz:'10115', city:'Berlin' }
+ * Erwartet die übliche deutsche Reihenfolge (Straße Hausnr, PLZ Ort).
+ * Liefert null, wenn keine 5-stellige PLZ gefunden wird.
+ */
+export function splitGermanAddress(raw) {
+  const s = String(raw || '').trim();
+  const m = s.match(/\b(\d{5})\b/);
+  if (!m) return null;
+  const plz = m[1];
+  const street = s.slice(0, m.index).replace(/[\s,;-]+$/, '').trim();
+  const city = s
+    .slice(m.index + plz.length)
+    .replace(/^[\s,;-]+/, '')
+    .split(/[,;]/)[0]
+    .trim();
+  return { street, plz, city };
+}
+
 /** Deutsche/gemischte Zahlenformate säubern → maschinenlesbarer String. */
 export function cleanNumber(raw) {
   let s = String(raw ?? '').trim();

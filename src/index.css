@@ -624,7 +624,7 @@ table.gf-grid select:focus {
   background: var(--gf-white);
 }
 .gf-grid-req {
-  border-bottom: 2px solid var(--gf-glaciar-gray) !important;
+  border-bottom: 2px solid var(--gf-sunstone) !important;
 }
 .gf-col-num input,
 input.gf-col-num {

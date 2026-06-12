@@ -12,6 +12,7 @@ import {
   transpose,
   findHeaderRow,
   guessMapping,
+  splitGermanAddress,
 } from '../../lib/importParse.js';
 
 /**
@@ -144,6 +145,16 @@ export default function ImportModal({ project, onImport, onClose }) {
       if (f.key === 'heatingType') s.heatingType = normalizeHeating(val, HEATING_TYPES);
       else if (f.key === 'heatedAreaM2' || f.key === 'consumptionLastYear') s[f.key] = cleanNumber(val);
       else s[f.key] = String(val).trim();
+    }
+    // Zusammengeschriebene Adresse erkennen: steht „…, 10115 Berlin" in der
+    // Straßen-Spalte und gibt es keine eigene PLZ-Spalte, automatisch aufteilen.
+    if ((!s.plz || String(s.plz).trim() === '') && /\b\d{5}\b/.test(s.streetHeating || '')) {
+      const split = splitGermanAddress(s.streetHeating);
+      if (split) {
+        if (split.street) s.streetHeating = split.street;
+        s.plz = split.plz;
+        if (!s.city) s.city = split.city;
+      }
     }
     return s;
   }
