@@ -21,3 +21,8 @@ BREVO_SENDER_EMAIL=noreply@green-fusion.de
 
 # Anzeigename des Absenders (optional).
 BREVO_SENDER_NAME=Green Fusion
+
+# Passwort für die Admin-Übersicht (/admin). Ohne dieses Passwort ist der
+# Admin-Bereich deaktiviert. Lokal mit `wrangler pages dev` nötig; bei
+# reinem `npm run dev` wird im Dev-Mock jedes Passwort akzeptiert.
+ADMIN_PASSWORD=geheim-bitte-aendern

@@ -9,7 +9,9 @@ Download oder manuelles Anhängen.
 - **Oberfläche:** React + Vite (komplett auf Deutsch)
 - **Server-Teil:** Cloudflare Pages Function (`/api/submit`)
 - **E-Mail-Versand:** Brevo (EU-betrieben)
-- **Keine Datenbank** – die Daten verlassen die Anwendung ausschließlich per E-Mail.
+- **Datenbank:** Cloudflare D1 (EU) für automatisches Cloud-Zwischenspeichern und
+  eine Admin-Übersicht (Abschnitt 6b). Ohne D1-Bindung läuft alles weiter, nur
+  ohne Cloud-Speicherung.
 
 > **Wichtig:** Es ist **keine** rein statische Seite. Der E-Mail-Versand läuft in
 > einer serverseitigen Funktion. Der Brevo-Schlüssel und die Empfängeradresse
@@ -144,6 +146,7 @@ Environment variables → „Add variable"**. Legen Sie diese vier Variablen an
 | `GF_RECIPIENT_EMAIL` | `anfragen@green-fusion.de` | Wer die Zusammenfassung + CSV erhält. |
 | `BREVO_SENDER_EMAIL` | `noreply@green-fusion.de` | Verifizierte Absenderadresse (Abschnitt 6). |
 | `BREVO_SENDER_NAME` | `Green Fusion` | Anzeigename des Absenders (optional). |
+| `ADMIN_PASSWORD` | `langes-zufälliges-passwort` | **Als „Secret" markieren.** Passwort für die Admin-Übersicht `/admin`. Ohne dieses Passwort ist der Admin-Bereich deaktiviert. |
 
 **Den Brevo-API-Schlüssel erstellen:**
 1. Bei Brevo anmelden: <https://app.brevo.com>.
@@ -238,6 +241,55 @@ Domain – Sie tragen dort einen kleinen Text ein.
 
 ---
 
+## 6b. Cloud-Zwischenspeicherung & Admin-Übersicht (Cloudflare D1)
+
+Die Anwendung speichert Eingaben **automatisch in der Cloud** (zusätzlich zum
+Browser), damit nichts verloren geht – auch wenn jemand nicht absendet oder den
+Zugang verliert. Green Fusion sieht alle Entwürfe **und** Einreichungen in einer
+**passwortgeschützten Übersicht** unter `/admin` und kann pro Eintrag die CSV
+herunterladen.
+
+### Datenbank einrichten (einmalig)
+
+Voraussetzung: Wrangler ist installiert (ist als Abhängigkeit dabei → `npx wrangler …`).
+
+1. **Anmelden:** `npx wrangler login`
+2. **Datenbank anlegen:** `npx wrangler d1 create gf-forms-db`
+   → Wrangler zeigt eine `database_id`. Diese in **`wrangler.toml`** bei
+   `database_id` eintragen (ersetzt `REPLACE_WITH_YOUR_DATABASE_ID`).
+   - Für **EU-Datenhaltung** beim Anlegen die passende Region wählen
+     (z. B. `--location weur` für Westeuropa).
+3. **Tabelle anlegen** (Schema einspielen):
+   ```bash
+   npx wrangler d1 execute gf-forms-db --remote --file=./schema.sql
+   ```
+4. **Bindung in Cloudflare Pages setzen:** Projekt → **Settings → Functions →
+   D1 database bindings** → Variablenname **`DB`** mit der Datenbank `gf-forms-db`
+   verknüpfen (für Production und ggf. Preview).
+5. **Admin-Passwort setzen:** Umgebungsvariable **`ADMIN_PASSWORD`** als Secret
+   anlegen (Abschnitt 5). Ohne dieses Passwort ist `/admin` deaktiviert.
+6. **Neu deployen.** Danach ist `https://…/admin` erreichbar (Passwort eingeben).
+
+### Datenschutz / Compliance
+
+- **Aufbewahrung:** Einträge werden **30 Tage** nach der letzten Änderung
+  automatisch gelöscht (Wert: `RETENTION_DAYS` in `functions/_lib/store.js`).
+  Die Löschung läuft „beiläufig" bei jeder Speicher-/Listenaktion, da Cloudflare
+  Pages keine zeitgesteuerten Jobs bietet.
+- **Region:** D1 lässt sich in der **EU** anlegen (siehe oben) – anders als
+  Cloudflare KV, das global repliziert. Deshalb D1.
+- **Hinweis im Formular:** Kundinnen/Kunden werden im Formular darauf
+  hingewiesen, dass Eingaben zwischengespeichert und nach 30 Tagen gelöscht werden.
+- **Verantwortung:** Rechtsgrundlage (z. B. berechtigtes Interesse/Einwilligung)
+  und der Auftragsverarbeitungsvertrag (AVV) mit Cloudflare liegen bei Green
+  Fusion. Dies ist keine Code-Aufgabe – bitte mit dem Datenschutz abstimmen.
+- **Zugang:** `/admin` ist nur mit `ADMIN_PASSWORD` nutzbar (über HTTPS). Bitte
+  ein langes, zufälliges Passwort verwenden.
+
+> **Ohne D1-Bindung** funktioniert alles weiter – es wird dann nur nicht in der
+> Cloud gespeichert (kein Fehler). Bei reinem `npm run dev` simuliert ein
+> In-Memory-Speicher die Cloud, und `/admin` akzeptiert jedes Passwort (nur lokal).
+
 ## 7. Projektstruktur
 
 ```
@@ -251,9 +303,19 @@ GF-Forms/
 │   ├── favicon.svg
 │   └── _redirects             SPA-Fallback für Cloudflare Pages
 │
+├── schema.sql                 D1-Datenbankschema (Tabelle `entries`)
+├── wrangler.toml              D1-Bindung (lokal/Prod) – database_id eintragen
+│
 ├── functions/
+│   ├── _lib/
+│   │   ├── store.js           D1-Zugriff + Auto-Löschung (Aufbewahrung)
+│   │   └── admin.js           Admin-Schutz (ADMIN_PASSWORD)
 │   └── api/
-│       └── submit.js          ⭐ Serverseitiger Endpunkt: Validierung + Brevo-Versand
+│       ├── submit.js          ⭐ Validierung + Brevo-Versand + D1 (eingereicht)
+│       ├── draft.js           Cloud-Zwischenspeichern (Entwürfe)
+│       └── admin/
+│           ├── entries.js     Liste für die Admin-Übersicht
+│           └── entry.js       Einzeleintrag + CSV-Download
 │
 ├── shared/                    Von Oberfläche UND Server gemeinsam genutzte Logik
 │   ├── conversion.js          Verbrauchs-Umrechnung in kWh (dokumentierte Faktoren)
@@ -264,9 +326,9 @@ GF-Forms/
 └── src/
     ├── main.jsx / App.jsx     Einstieg & Routing
     ├── index.css              Green Fusion Design System v2 (CSS-Variablen)
-    ├── lib/                   Hilfsfunktionen (PLZ-Suche, Plausibilität, Prefill, API)
-    ├── components/            Wiederverwendbare Felder & Layout
-    └── routes/                Startseite, Formular 1, Formular 2, Dankeseite
+    ├── lib/                   Hilfsfunktionen (PLZ-Suche, Plausibilität, Prefill, Import, Cloud-Sync)
+    ├── components/            Wiederverwendbare Felder, Layout, Import-Dialog, Mail-Pop-up
+    └── routes/                Start, Formular 1, Formular 2, Dankeseite, Admin-Übersicht
 ```
 
 ### Was beim Absenden passiert (Kurzfassung)
@@ -322,10 +384,12 @@ GF-Forms/
 - **Vorausfüllen aus HubSpot** über personalisierte Links. Vorbereitet ist es
   bereits: `src/lib/prefill.js` liest passende URL-Parameter aus
   (z. B. `…/standard?company=Musterbau&email=erika@…&systemCount=3`).
-- **Datenbank / dauerhafte Speicherung.** Die Logik ist gekapselt
-  (`shared/submission.js`), sodass sich ein Speicherschritt später ergänzen lässt,
-  ohne die Oberfläche zu ändern.
 - **Foto-Auslesen** von Abrechnung oder Typenschild.
+- **PDF-Listen automatisch auslesen** (Excel/CSV-Import ist enthalten; PDFs
+  laufen über den „Liste per Mail"-Notausgang).
+
+> Hinweis: Eine **Cloud-Speicherung** (Entwürfe + Einreichungen in Cloudflare D1)
+> samt Admin-Übersicht ist inzwischen enthalten – siehe Abschnitt 6b.
 
 ### Datenschutz
 
