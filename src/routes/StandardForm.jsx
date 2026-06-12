@@ -11,6 +11,7 @@ import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
 import { GF_CONTACT_EMAIL, GUIDED_MAX } from '../lib/config.js';
+import MailListToast from '../components/MailListToast.jsx';
 
 const DRAFT_KEY = 'gf-standard-draft';
 
@@ -206,8 +207,6 @@ export default function StandardForm() {
               </span>
               <h1 className="gf-step-title" style={{ marginBottom: 16 }}>Erzählen Sie uns von dieser Anlage</h1>
 
-              <Notausgang mailtoHref={mailtoHref} compact />
-
               {current > 0 && (
                 <button
                   type="button"
@@ -250,8 +249,6 @@ export default function StandardForm() {
                 Am schnellsten geht's, wenn Sie Ihre vorhandene Liste einfach hineinkopieren. Schätzen ist
                 überall okay — wir prüfen die Zahlen später gemeinsam.
               </p>
-
-              <Notausgang mailtoHref={mailtoHref} />
 
               <SystemGrid systems={systems} setSystems={setSystems} project={project} />
 
@@ -305,29 +302,8 @@ export default function StandardForm() {
           )}
         </AnimatePresence>
       </div>
+      <MailListToast mailtoHref={mailtoHref} />
     </div>
-  );
-}
-
-/**
- * Notausgang: „Liste per Mail schicken". Für alle sichtbar – wer schon eine
- * Liste hat, muss nichts abtippen. `compact` = schlankere Variante (geführter Modus).
- */
-function Notausgang({ mailtoHref, compact }) {
-  return (
-    <Hint kind="info">
-      <div>
-        <strong>Sie haben das schon in einer Liste?</strong>{' '}
-        {compact
-          ? 'Dann tippen Sie nichts ab — schicken Sie sie uns einfach (Excel, PDF, egal).'
-          : 'Wahrscheinlich liegt das längst bei Ihnen vor. Schicken Sie sie uns einfach so, wie Sie sie haben — Excel, PDF, egal. Wir kümmern uns um den Rest.'}
-        <div style={{ marginTop: 8 }}>
-          <a className="gf-btn gf-btn-primary" href={mailtoHref}>
-            Liste per Mail schicken
-          </a>
-        </div>
-      </div>
-    </Hint>
   );
 }
 
