@@ -764,6 +764,71 @@ input.gf-col-num {
   box-shadow: var(--gf-shadow-lg);
 }
 
+/* ---- Notausgang-Pop-up (unten rechts, minimierbar) --------------------- */
+.gf-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: var(--gf-white);
+  border: 1px solid var(--gf-polar-mist);
+  border-left: 3px solid var(--gf-primary);
+  border-radius: var(--gf-radius-lg);
+  box-shadow: var(--gf-shadow-lg);
+  padding: 18px 18px 16px;
+}
+.gf-toast-min {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--gf-steel-smoke);
+  font-size: 20px;
+  line-height: 1;
+  border-radius: var(--gf-radius-sm);
+  cursor: pointer;
+}
+.gf-toast-min:hover {
+  background: var(--gf-pearly-white);
+}
+.gf-toast-pill {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  border: none;
+  background: var(--gf-primary);
+  color: var(--gf-white);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: var(--gf-radius-full);
+  box-shadow: var(--gf-shadow-md);
+  cursor: pointer;
+  transition: background var(--gf-t);
+}
+.gf-toast-pill:hover {
+  background: var(--gf-jungle-green);
+}
+@media (max-width: 640px) {
+  .gf-toast {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+  .gf-toast-pill {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
 /* ---- Diverses ----------------------------------------------------------- */
 .gf-row2 {
   display: grid;

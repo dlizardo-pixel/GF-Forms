@@ -22,6 +22,8 @@ import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { COMPONENT_ICON } from '../lib/brandAssets.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
+import { GF_CONTACT_EMAIL } from '../lib/config.js';
+import MailListToast from '../components/MailListToast.jsx';
 
 const DRAFT_KEY = 'gf-sektor-draft';
 
@@ -102,6 +104,14 @@ export default function SektorkopplungForm() {
       setSubmitting(false);
     }
   }
+
+  const mailtoHref =
+    `mailto:${GF_CONTACT_EMAIL}` +
+    `?subject=${encodeURIComponent('Anlagenliste – ' + (data.company || 'Ihr Unternehmen'))}` +
+    `&body=${encodeURIComponent(
+      'Hallo,\n\nanbei unsere vorhandene Liste (Excel/PDF). Bitte melden Sie sich, wenn etwas fehlt.\n\nViele Grüße\n' +
+        (data.contactName || ''),
+    )}`;
 
   return (
     <div className="gf-page">
@@ -279,6 +289,7 @@ export default function SektorkopplungForm() {
           </Step>
         </AnimatePresence>
       </div>
+      <MailListToast mailtoHref={mailtoHref} />
     </div>
   );
 }
