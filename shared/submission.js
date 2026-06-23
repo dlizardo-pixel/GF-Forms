@@ -11,6 +11,7 @@
 
 import { buildStandardCsv, buildSektorkopplungCsv } from './csv.js';
 import { describeConversion } from './conversion.js';
+import { formatOtherHeatSources } from './sektorLabels.js';
 
 function isFilled(v) {
   return v !== undefined && v !== null && String(v).trim() !== '';
@@ -55,11 +56,18 @@ export function validateSubmission(data) {
       if (!isFilled(s.consumptionLastYear)) errors.push(`Anlage ${n}: Jahresverbrauch (letztes Jahr) fehlt.`);
     });
   } else if (data.type === 'sektorkopplung') {
-    if (!isFilled(data.contactEmail)) errors.push('E-Mail des Ansprechpartners fehlt (für die Bestätigung).');
-    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.contactEmail)) errors.push('E-Mail des Ansprechpartners ist ungültig.');
-    if (!isFilled(data.streetHeating)) errors.push('Straße & Hausnummer der Heizungsanlage fehlt.');
-    if (!isFilled(data.plz)) errors.push('PLZ fehlt.');
-    if (!isFilled(data.city)) errors.push('Stadt fehlt.');
+    const contact = data.contact || data; // rückwärtskompatibel
+    if (!isFilled(contact.contactEmail)) errors.push('E-Mail des Ansprechpartners fehlt (für die Bestätigung).');
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.contactEmail)) errors.push('E-Mail des Ansprechpartners ist ungültig.');
+
+    const sites = Array.isArray(data.sites) ? data.sites : [data];
+    if (sites.length === 0) errors.push('Es wurde keine Anlage erfasst.');
+    sites.forEach((s, i) => {
+      const n = i + 1;
+      if (!isFilled(s.streetHeating)) errors.push(`Anlage ${n}: Straße & Hausnummer der Heizungsanlage fehlt.`);
+      if (!isFilled(s.plz)) errors.push(`Anlage ${n}: PLZ fehlt.`);
+      if (!isFilled(s.city)) errors.push(`Anlage ${n}: Stadt fehlt.`);
+    });
   } else {
     errors.push('Unbekannter Formulartyp.');
   }
@@ -140,45 +148,54 @@ export function buildSummaryHtml(data) {
       `<p style="margin-top:0;">Es ist eine neue Erfassung über das Online-Formular eingegangen. Die vollständigen Daten finden Sie in der angehängten CSV-Datei.</p>${html}`);
   }
 
-  // Sektorkopplung
-  const c = data.components || {};
-  const sel = Array.isArray(data.selectedComponents) ? data.selectedComponents : [];
-  const compState = (key) => {
-    if (!sel.includes(key)) return '';
-    const st = (data.componentStatus || {})[key];
-    return st === 'geplant' ? 'geplant' : st === 'vorhanden' ? 'vorhanden' : 'ausgewählt';
-  };
+  // Sektorkopplung – Ansprechpartner einmal, dann pro Anlage.
+  const contact = data.contact || data;
+  const sites = Array.isArray(data.sites) ? data.sites : [data];
 
-  let html = section('Standort & Kontakt', [
-    kv('Ansprechpartner', data.contactName),
-    kv('Unternehmen', data.company),
-    kv('E-Mail', data.contactEmail),
-    kv('Straße & Hausnr. Heizungsanlage', data.streetHeating),
-    kv('Versorgte Gebäude', data.suppliedBuildings),
-    kv('PLZ', data.plz),
-    kv('Stadt', data.city),
-    kv('Wohneinheiten', data.residentialUnits),
-    kv('Hauswart', data.caretakerName),
-    kv('Telefon', data.caretakerPhone),
+  let html = section('Ansprechpartner', [
+    kv('Ansprechpartner', contact.contactName),
+    kv('Unternehmen', contact.company),
+    kv('E-Mail', contact.contactEmail),
+    kv('Telefon', contact.contactPhone),
+    kv('Anzahl Anlagen', sites.length),
   ]);
 
-  html += section('Komponenten', [
-    kv('Wärmepumpe', compState('waermepumpe') && `${compState('waermepumpe')} · ${[c.heatPumpModel, c.heatPumpCount && `${c.heatPumpCount}×`, c.heatPumpKw && `${c.heatPumpKw} kW`].filter(Boolean).join(', ')}`),
-    kv('Heizstab', compState('heizstab') && `${compState('heizstab')} · ${[c.heatingRodCount && `${c.heatingRodCount}×`, c.heatingRodKw && `${c.heatingRodKw} kW`].filter(Boolean).join(', ')}`),
-    kv('Pufferspeicher', compState('pufferspeicher') && `${compState('pufferspeicher')} · ${[c.bufferCount && `${c.bufferCount}×`, c.bufferLiters && `${c.bufferLiters} l`].filter(Boolean).join(', ')}`),
-    kv('PV-Anlage', compState('pv') && `${compState('pv')} · ${[c.pvInverterModel, c.pvCount && `${c.pvCount}×`, c.pvKwp && `${c.pvKwp} kWp`].filter(Boolean).join(', ')}`),
-    kv('Batteriespeicher', compState('batterie') && `${compState('batterie')} · ${[c.batteryInverterModel, c.batteryCount && `${c.batteryCount}×`, c.batteryKwh && `${c.batteryKwh} kWh`].filter(Boolean).join(', ')}`),
-  ]);
+  sites.forEach((site, i) => {
+    const c = site.components || {};
+    const sel = Array.isArray(site.selectedComponents) ? site.selectedComponents : [];
+    const compState = (key) => {
+      if (!sel.includes(key)) return '';
+      const st = (site.componentStatus || {})[key];
+      return st === 'geplant' ? 'geplant' : st === 'vorhanden' ? 'läuft schon' : 'ausgewählt';
+    };
+    const pvOperator = site.pvOperator
+      ? site.pvOperator.startsWith('Ein Dritter') && site.pvOperatorName
+        ? `${site.pvOperator} – ${site.pvOperatorName}`
+        : site.pvOperator
+      : '';
 
-  html += section('Installation & Zugang', [
-    kv('Freigabe / Status', data.installationStatus),
-    kv('Installateur PV', data.installerPv),
-    kv('Installateur Wärmepumpe', data.installerHeatPump),
-    kv('PV-Nutzungskonzept', data.pvUsageConcept),
-    kv('Internet', data.internetProvision),
-    kv('Zugangsdaten', data.accessCredentials),
-    kv('Kommentar', data.comment),
-  ]);
+    html += section(`Anlage ${i + 1}: ${site.streetHeating || ''} ${site.plz || ''} ${site.city || ''}`.trim(), [
+      kv('Versorgte Gebäude', site.suppliedBuildings),
+      kv('Wohneinheiten', site.residentialUnits),
+      kv('Wärmepumpe', compState('waermepumpe') && `${compState('waermepumpe')} · ${[c.heatPumpModel, c.heatPumpCount && `${c.heatPumpCount}×`, c.heatPumpKw && `${c.heatPumpKw} kW`].filter(Boolean).join(', ')}`),
+      kv('WP-Regler / Controller', sel.includes('waermepumpe') ? c.heatPumpController : ''),
+      kv('WP-Topologie', sel.includes('waermepumpe') ? c.heatPumpTopology : ''),
+      kv('WP ist Haupterzeuger', sel.includes('waermepumpe') ? (site.wpIsMainHeater === true ? 'Ja' : site.wpIsMainHeater === false ? 'Nein' : '') : ''),
+      kv('Weitere Wärmeerzeuger', formatOtherHeatSources(site)),
+      kv('Heizstab', compState('heizstab') && `${compState('heizstab')} · ${[c.heatingRodCount && `${c.heatingRodCount}×`, c.heatingRodKw && `${c.heatingRodKw} kW`].filter(Boolean).join(', ')}`),
+      kv('Pufferspeicher', compState('pufferspeicher') && `${compState('pufferspeicher')} · ${[c.bufferCount && `${c.bufferCount}×`, c.bufferLiters && `${c.bufferLiters} l`].filter(Boolean).join(', ')}`),
+      kv('PV-Anlage', compState('pv') && `${compState('pv')} · ${[c.pvInverterModel, c.pvCount && `${c.pvCount}×`, c.pvKwp && `${c.pvKwp} kWp`].filter(Boolean).join(', ')}`),
+      kv('PV-Nutzung', sel.includes('pv') ? site.pvUsage : ''),
+      kv('PV-Betreiber', sel.includes('pv') ? pvOperator : ''),
+      kv('Batteriespeicher', compState('batterie') && `${compState('batterie')} · ${[c.batteryInverterModel, c.batteryCount && `${c.batteryCount}×`, c.batteryKwh && `${c.batteryKwh} kWh`].filter(Boolean).join(', ')}`),
+      kv('Anderes EMS / GLT', site.existingEms === true ? 'Ja' : site.existingEms === false ? 'Nein' : ''),
+      kv('EMS nutzt Modbus', site.existingEms === true ? site.existingEmsModbus : ''),
+      kv('Zugriff auf Anlage', site.siteAccess),
+      kv('Zeithorizont (Planung)', site.planningHorizon),
+      kv('Installateur (Nebeninfo)', site.installer),
+      kv('Kommentar', site.comment),
+    ]);
+  });
 
   return wrapHtml('Neue Anlagen-Erfassung (Sektorkopplung)',
     `<p style="margin-top:0;">Es ist eine neue Sektorkopplungs-Erfassung über das Online-Formular eingegangen. Die vollständigen Daten finden Sie in der angehängten CSV-Datei.</p>${html}`);
@@ -205,7 +222,8 @@ function customerContact(data) {
   if (data.type === 'standard') {
     return { name: data.project?.contactName, email: data.project?.contactEmail };
   }
-  return { name: data.contactName, email: data.contactEmail };
+  const contact = data.contact || data; // sektorkopplung (rückwärtskompatibel)
+  return { name: contact.contactName, email: contact.contactEmail };
 }
 
 /**

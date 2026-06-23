@@ -486,7 +486,7 @@ a {
 }
 .gf-typecards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--gf-space-6);
   margin-top: var(--gf-space-12);
   text-align: left;

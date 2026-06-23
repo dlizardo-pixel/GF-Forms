@@ -7,6 +7,7 @@
  */
 
 import { consumptionToKwh } from './conversion.js';
+import { formatComponentStatus, formatOtherHeatSources, formatPvOperator, jaNein as jaNeinLbl } from './sektorLabels.js';
 
 const SEP = ';';
 const BOM = '﻿';
@@ -103,11 +104,14 @@ export function buildSektorkopplungCsv(data) {
     'PLZ',
     'Stadt',
     'Wohneinheiten',
-    'Hauswart',
-    'Telefon',
+    'Komponenten (Status)',
     'Wärmepumpe (Hersteller/Modell)',
-    'Wärmepumpe Anzahl',
-    'Wärmepumpe kW',
+    'WP-Regler/Controller',
+    'WP-Topologie',
+    'WP Anzahl',
+    'WP kW',
+    'WP Haupterzeuger',
+    'Weitere Wärmeerzeuger',
     'Heizstab Anzahl',
     'Heizstab kW',
     'Pufferspeicher Anzahl',
@@ -115,49 +119,59 @@ export function buildSektorkopplungCsv(data) {
     'PV-Wechselrichter (Hersteller/Modell)',
     'PV Anzahl',
     'PV kWp',
+    'PV-Nutzung',
+    'PV-Betreiber',
     'Batterie-Wechselrichter (Hersteller/Modell)',
     'Batterie Anzahl',
     'Batterie kWh',
-    'Status/Freigabe',
-    'Installateur PV',
-    'Installateur Wärmepumpe',
-    'PV-Nutzungskonzept',
-    'Internet',
+    'Anderes EMS/GLT',
+    'EMS nutzt Modbus',
+    'Zugriff auf Anlage',
+    'Zeithorizont (Planung)',
+    'Installateur (Nebeninfo)',
     'Kommentar',
   ];
 
-  const c = data.components || {};
-  const has = (key) => Array.isArray(data.selectedComponents) && data.selectedComponents.includes(key);
+  const sites = Array.isArray(data.sites) ? data.sites : [data]; // Rückwärtskompatibel zum Einzel-Anlagen-Format
+  const siteLine = (site, nr) => {
+    const c = site.components || {};
+    const has = (key) => Array.isArray(site.selectedComponents) && site.selectedComponents.includes(key);
+    return rowToLine([
+      nr,
+      site.streetHeating,
+      site.suppliedBuildings,
+      site.plz,
+      site.city,
+      site.residentialUnits,
+      formatComponentStatus(site),
+      has('waermepumpe') ? c.heatPumpModel : '',
+      has('waermepumpe') ? c.heatPumpController : '',
+      has('waermepumpe') ? c.heatPumpTopology : '',
+      has('waermepumpe') ? c.heatPumpCount : '',
+      has('waermepumpe') ? c.heatPumpKw : '',
+      has('waermepumpe') ? jaNeinLbl(site.wpIsMainHeater) : '',
+      formatOtherHeatSources(site),
+      has('heizstab') ? c.heatingRodCount : '',
+      has('heizstab') ? c.heatingRodKw : '',
+      has('pufferspeicher') ? c.bufferCount : '',
+      has('pufferspeicher') ? c.bufferLiters : '',
+      has('pv') ? c.pvInverterModel : '',
+      has('pv') ? c.pvCount : '',
+      has('pv') ? c.pvKwp : '',
+      has('pv') ? site.pvUsage : '',
+      has('pv') ? formatPvOperator(site) : '',
+      has('batterie') ? c.batteryInverterModel : '',
+      has('batterie') ? c.batteryCount : '',
+      has('batterie') ? c.batteryKwh : '',
+      jaNeinLbl(site.existingEms),
+      site.existingEms === true ? site.existingEmsModbus : '',
+      site.siteAccess,
+      site.planningHorizon,
+      site.installer,
+      site.comment,
+    ]);
+  };
 
-  const line = rowToLine([
-    1,
-    data.streetHeating,
-    data.suppliedBuildings,
-    data.plz,
-    data.city,
-    data.residentialUnits,
-    data.caretakerName,
-    data.caretakerPhone,
-    has('waermepumpe') ? c.heatPumpModel : '',
-    has('waermepumpe') ? c.heatPumpCount : '',
-    has('waermepumpe') ? c.heatPumpKw : '',
-    has('heizstab') ? c.heatingRodCount : '',
-    has('heizstab') ? c.heatingRodKw : '',
-    has('pufferspeicher') ? c.bufferCount : '',
-    has('pufferspeicher') ? c.bufferLiters : '',
-    has('pv') ? c.pvInverterModel : '',
-    has('pv') ? c.pvCount : '',
-    has('pv') ? c.pvKwp : '',
-    has('batterie') ? c.batteryInverterModel : '',
-    has('batterie') ? c.batteryCount : '',
-    has('batterie') ? c.batteryKwh : '',
-    data.installationStatus,
-    data.installerPv,
-    data.installerHeatPump,
-    data.pvUsageConcept,
-    data.internetProvision,
-    data.comment,
-  ]);
-
-  return BOM + [rowToLine(headers), line].join('\r\n');
+  const lines = [rowToLine(headers), ...sites.map((site, i) => siteLine(site, i + 1))];
+  return BOM + lines.join('\r\n');
 }

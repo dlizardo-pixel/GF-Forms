@@ -21,6 +21,8 @@ export default function StandardForm() {
   const navigate = useNavigate();
   const prefill = useMemo(() => readPrefill(search), [search]);
   const draft = useMemo(() => loadDraft(DRAFT_KEY), []);
+  // „Beides"-Modus: erst dieses (klassische) Formular, danach Sektorkopplung.
+  const both = useMemo(() => new URLSearchParams(search).get('both') === '1', [search]);
 
   const defaultProject = {
     contactName: prefill.contactName,
@@ -109,7 +111,16 @@ export default function StandardForm() {
       });
       clearDraft(DRAFT_KEY);
       clearCloudId(DRAFT_KEY);
-      navigate('/danke', { state: { mock: res.mock } });
+      if (both) {
+        // Kontaktdaten an das Sektorkopplungs-Formular weiterreichen und dorthin wechseln.
+        sessionStorage.setItem(
+          'gf-both-contact',
+          JSON.stringify({ contactName: project.contactName, company: project.company, contactEmail: project.contactEmail }),
+        );
+        navigate('/sektorkopplung?both=1');
+      } else {
+        navigate('/danke', { state: { mock: res.mock } });
+      }
     } catch (err) {
       setErrors(err.errors || [err.message]);
       setSubmitting(false);
@@ -145,6 +156,13 @@ export default function StandardForm() {
           />
         )}
         {phase === 'submit' && <Progress percent={95} label="Letzter Schritt: Absenden" />}
+
+        {both && (
+          <Hint kind="info">
+            <strong>Teil 1 von 2:</strong> Zuerst Ihre klassischen Heizungen. Danach geht es weiter mit
+            Wärmepumpe/Solar.
+          </Hint>
+        )}
 
         {restored && (
           <Hint kind="info">
