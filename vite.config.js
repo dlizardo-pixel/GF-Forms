@@ -19,11 +19,11 @@ function devApiPlugin() {
   const summarize = (type, data) => {
     if (type === 'standard') {
       const p = (data && data.project) || {};
-      return { company: p.company || '', name: p.contactName || '', email: p.contactEmail || '', count: (data.systems || []).length };
+      return { company: p.company || '', contact_name: p.contactName || '', contact_email: p.contactEmail || '', system_count: (data.systems || []).length };
     }
     const contact = data.contact || data || {};
     const sites = Array.isArray(data.sites) ? data.sites : [data];
-    return { company: contact.company || '', name: contact.contactName || '', email: contact.contactEmail || '', count: sites.length };
+    return { company: contact.company || '', contact_name: contact.contactName || '', contact_email: contact.contactEmail || '', system_count: sites.length };
   };
 
   const readBody = (req) =>
