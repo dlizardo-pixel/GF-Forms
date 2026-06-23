@@ -48,7 +48,7 @@ export default function Home() {
           </div>
 
           <p style={{ fontSize: 14, marginTop: 28 }}>
-            Nicht sicher? Nehmen Sie das Erste — den Rest klären wir gemeinsam. Wir müssen da nichts hetzen.
+            Nicht sicher? Nehmen Sie das Erste — den Rest klären wir gemeinsam.
           </p>
         </div>
       </div>
