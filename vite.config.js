@@ -21,7 +21,9 @@ function devApiPlugin() {
       const p = (data && data.project) || {};
       return { company: p.company || '', name: p.contactName || '', email: p.contactEmail || '', count: (data.systems || []).length };
     }
-    return { company: data.company || '', name: data.contactName || '', email: data.contactEmail || '', count: 1 };
+    const contact = data.contact || data || {};
+    const sites = Array.isArray(data.sites) ? data.sites : [data];
+    return { company: contact.company || '', name: contact.contactName || '', email: contact.contactEmail || '', count: sites.length };
   };
 
   const readBody = (req) =>

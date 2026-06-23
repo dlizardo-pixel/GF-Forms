@@ -26,11 +26,15 @@ function summarize(type, data) {
       count: Array.isArray(data && data.systems) ? data.systems.length : null,
     };
   }
+  // Sektorkopplung: Ansprechpartner in data.contact, mehrere Anlagen in data.sites
+  // (rückwärtskompatibel zum alten Einzel-Anlagen-Format).
+  const contact = (data && data.contact) || data || {};
+  const sites = Array.isArray(data && data.sites) ? data.sites : [data];
   return {
-    company: (data && data.company) || '',
-    name: (data && data.contactName) || '',
-    email: (data && data.contactEmail) || '',
-    count: 1,
+    company: contact.company || '',
+    name: contact.contactName || '',
+    email: contact.contactEmail || '',
+    count: sites.length,
   };
 }
 

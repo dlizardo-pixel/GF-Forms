@@ -36,6 +36,15 @@ export default function Home() {
                 zusammenspielen.
               </p>
             </Link>
+
+            <Link to={`/standard${search ? search + '&' : '?'}both=1`} className="gf-typecard">
+              <img src={ICONS.tools} alt="" className="gf-typecard-icon" />
+              <h2>Ich möchte beides</h2>
+              <p>
+                Klassische Heizungen <em>und</em> Wärmepumpe/Solar. Wir gehen zuerst die klassischen Anlagen
+                durch, danach die mit Wärmepumpe oder PV.
+              </p>
+            </Link>
           </div>
 
           <p style={{ fontSize: 14, marginTop: 28 }}>

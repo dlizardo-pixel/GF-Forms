@@ -346,7 +346,18 @@ GF-Forms/
 
 - **Umrechnungsfaktoren** (z. B. genauere Brennwerte): `shared/conversion.js`.
 - **CSV-Spalten**: `shared/csv.js` (an die bestehende GF-Anlagenliste angelehnt).
-- **Auswahloptionen** (Heizungstypen, Komponenten): `src/lib/options.js`.
+- **Auswahloptionen** (Heizungstypen, Komponenten, WP-Topologie, PV-Nutzung,
+  EMS/Zugriff …): `src/lib/options.js`.
+- **Sektorkopplung – mehrere Anlagen:** Ansprechpartner einmal, dann je Anlage
+  ein geführter Schritt (`src/routes/SektorkopplungForm.jsx` + `src/components/sektor/SiteEditor.jsx`,
+  Datenmodell `src/lib/sektorModel.js`). Erfasst die anbindungsrelevanten Felder
+  (WP-Regler/Controller, Topologie, Haupterzeuger, weitere Wärmeerzeuger, anderes
+  EMS/GLT + Modbus, PV-Nutzung Eigenverbrauch/Volleinspeisung, PV-Betreiber,
+  Zugriff/Erlaubnis, Zeithorizont). CSV-/E-Mail-Spalten dazu in `shared/csv.js`
+  und `shared/submission.js`, Beschriftungen in `shared/sektorLabels.js`.
+- **„Ich möchte beides"** (Startseite): füllt erst das klassische Formular aus
+  (`/standard?both=1`), reicht den Kontakt per `sessionStorage` weiter und
+  wechselt danach zu `/sektorkopplung?both=1` (zwei getrennte Einreichungen).
 - **Hersteller-Vorschläge**: `shared/manufacturers.js`.
 - **Design-Farben/Schrift/Icons**: `src/index.css` (Tokens) und `src/lib/brandAssets.js`.
 - **Texte in Kundensprache**: direkt in den Seiten unter `src/routes/` und in den
