@@ -25,18 +25,7 @@ export function checkConsumptionPerArea(system) {
   return null;
 }
 
-/** Baujahr außerhalb plausibler Grenzen? */
-export function checkConstructionYear(year) {
-  const y = Number(year);
-  if (!y) return null;
-  const now = new Date().getFullYear();
-  if (y < 1850 || y > now) {
-    return `${y} als Baujahr/Sanierung — ist da vielleicht ein Tippfehler drin?`;
-  }
-  return null;
-}
-
 /** Sammelt alle Hinweise für eine Anlage. */
 export function systemHints(system) {
-  return [checkConsumptionPerArea(system), checkConstructionYear(system.constructionYear)].filter(Boolean);
+  return [checkConsumptionPerArea(system)].filter(Boolean);
 }

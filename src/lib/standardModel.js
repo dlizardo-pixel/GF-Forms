@@ -4,25 +4,20 @@
 export function makeSystem(project = {}, prev = null) {
   const base = {
     streetHeating: '',
-    suppliedBuildings: '',
     plz: '',
     city: '',
     lat: null,
     lng: null,
     heatingType: '',
-    substationPresent: undefined,
-    substationCount: '',
-    powerKw: '',
-    modelInfo: '',
+    // Mehrere Gebäude / Unterstationen (eine kombinierte Frage – geht in die Preisstufe ein)
+    multiSupply: undefined,
+    supplyCount: '',
     districtHeatingConnectionKw: '',
-    centralHotWater: undefined,
     residentialUnits: '',
-    constructionYear: '',
     heatedAreaM2: '',
     specialNotes: '',
     consumptionLastYear: '',
     consumptionPrevYear: '',
-    consumptionPrevPrevYear: '',
     // Vertrag & Abrechnung (optional, einklappbar)
     caretakerContact: '',
     caretakerPhone: '',
@@ -33,24 +28,19 @@ export function makeSystem(project = {}, prev = null) {
     billingEmail: '',
     additionalRecipients: '',
     referenceNumber: '',
-    billingCycle: '',
   };
 
-  // Projekt-Vorgaben als Standard übernehmen (pro Anlage änderbar).
+  // Projekt-Vorgabe Energieträger als Standard übernehmen (pro Anlage änderbar).
   if (project.defaultEnergyType && project.defaultEnergyType !== '(keine Vorgabe)') {
     base.heatingType = project.defaultEnergyType;
   }
-  if (project.billingCycle && project.billingCycle !== '(keine Angabe)') {
-    base.billingCycle = project.billingCycle;
-  }
 
   // "Werte von letzter Anlage übernehmen": Vorgänger als Ausgangswert kopieren,
-  // aber adress-spezifische Felder leeren (die unterscheiden sich immer).
+  // aber adress-spezifische Felder leeren.
   if (prev) {
     return {
       ...prev,
       streetHeating: '',
-      suppliedBuildings: '',
       plz: '',
       city: '',
       lat: null,

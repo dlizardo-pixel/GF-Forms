@@ -113,25 +113,19 @@ export function buildSummaryHtml(data) {
       kv('E-Mail', p.contactEmail),
       kv('Anzahl Anlagen', p.systemCount),
       kv('Vorgabe Energieträger', p.defaultEnergyType),
-      kv('Abrechnungsturnus', p.billingCycle),
     ]);
 
     (data.systems || []).forEach((s, i) => {
+      const supply = s.multiSupply === true ? `Ja${isFilled(s.supplyCount) ? ` (${s.supplyCount})` : ''}` : s.multiSupply === false ? 'Nein' : '';
       html += section(`Anlage ${i + 1}: ${s.streetHeating || ''} ${s.plz || ''} ${s.city || ''}`.trim(), [
-        kv('Versorgte Gebäude', s.suppliedBuildings),
         kv('Heizungstyp', s.heatingType),
-        kv('Unterstation', s.substationPresent ? `Ja (${s.substationCount || '?'})` : (s.substationPresent === false ? 'Nein' : '')),
-        kv('Leistung', isFilled(s.powerKw) ? `${s.powerKw} kW` : ''),
-        kv('Modell / Info', s.modelInfo),
+        kv('Mehrere Gebäude / Unterstationen', supply),
         kv('Fernwärme-Anschlussleistung', isFilled(s.districtHeatingConnectionKw) ? `${s.districtHeatingConnectionKw} kW` : ''),
-        kv('Zentrales Warmwasser', s.centralHotWater === true ? 'Ja' : s.centralHotWater === false ? 'Nein' : ''),
         kv('Wohneinheiten', s.residentialUnits),
-        kv('Baujahr / Sanierung', s.constructionYear),
         kv('Beheizte Fläche', isFilled(s.heatedAreaM2) ? `${s.heatedAreaM2} m²` : ''),
         kv('Besonderheiten', s.specialNotes),
         kv('Verbrauch letztes Jahr', describeConversion(s.consumptionLastYear, s.heatingType)),
         kv('Verbrauch vorletztes Jahr', describeConversion(s.consumptionPrevYear, s.heatingType)),
-        kv('Verbrauch vor-vorletztes Jahr', describeConversion(s.consumptionPrevPrevYear, s.heatingType)),
         kv('Hauswart / Kontakt', s.caretakerContact),
         kv('Telefon', s.caretakerPhone),
         kv('Heizkreise', s.heatingCircuits),
@@ -140,7 +134,6 @@ export function buildSummaryHtml(data) {
         kv('E-Mail Rechnungsversand', s.billingEmail),
         kv('Weitere Empfänger', s.additionalRecipients),
         kv('Referenznummer', s.referenceNumber),
-        kv('Abrechnungsturnus', s.billingCycle),
       ]);
     });
 
