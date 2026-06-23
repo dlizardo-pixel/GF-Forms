@@ -26,12 +26,6 @@ function rowToLine(cells) {
   return cells.map(csvCell).join(SEP);
 }
 
-function jaNein(v) {
-  if (v === true || v === 'ja' || v === 'Ja') return 'Ja';
-  if (v === false || v === 'nein' || v === 'Nein') return 'Nein';
-  return '';
-}
-
 /**
  * CSV für "Standard Business Case".
  * Spaltenreihenfolge exakt nach Abschnitt 7 der Aufgabe.
