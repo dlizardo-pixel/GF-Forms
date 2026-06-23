@@ -6,7 +6,7 @@ import { TextField, SelectField, NumberField, Hint } from '../components/Fields.
 import SystemEditor from '../components/standard/SystemEditor.jsx';
 import SystemGrid from '../components/standard/SystemGrid.jsx';
 import { makeSystem, isSystemComplete } from '../lib/standardModel.js';
-import { ENERGY_TYPE_OPTIONS, BILLING_CYCLES } from '../lib/options.js';
+import { ENERGY_TYPE_OPTIONS } from '../lib/options.js';
 import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
@@ -31,7 +31,6 @@ export default function StandardForm() {
     contactEmail: prefill.contactEmail,
     systemCount: prefill.systemCount || '',
     defaultEnergyType: prefill.defaultEnergyType || '(keine Vorgabe)',
-    billingCycle: prefill.billingCycle || '(keine Angabe)',
   };
 
   // phase: 'project' → 'systems' → 'submit'
@@ -191,7 +190,7 @@ export default function StandardForm() {
 
               <TextField label="Wie heißen Sie?" value={project.contactName} onChange={setProjectField('contactName')} required />
               <TextField label="Ihre Rolle / Funktion" value={project.contactRole} onChange={setProjectField('contactRole')} help="Optional." />
-              <TextField label="Für welches Unternehmen?" value={project.company} onChange={setProjectField('company')} required />
+              <TextField label="Unternehmensname" value={project.company} onChange={setProjectField('company')} required />
               <TextField
                 label="Ihre E-Mail"
                 value={project.contactEmail}
@@ -214,13 +213,6 @@ export default function StandardForm() {
                 onChange={setProjectField('defaultEnergyType')}
                 options={ENERGY_TYPE_OPTIONS}
                 help="Optional — wir tragen ihn dann schon mal vor; ändern können Sie ihn je Anlage."
-              />
-              <SelectField
-                label="In welchem Turnus rechnen Sie ab?"
-                value={project.billingCycle}
-                onChange={setProjectField('billingCycle')}
-                options={BILLING_CYCLES}
-                help="Optional."
               />
 
               {errors.length > 0 && <ErrorBox errors={errors} />}

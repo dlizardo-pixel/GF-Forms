@@ -157,7 +157,7 @@ export default function SektorkopplungForm() {
               </p>
 
               <TextField label="Wie heißen Sie?" value={contact.contactName} onChange={setContactField('contactName')} />
-              <TextField label="Für welches Unternehmen?" value={contact.company} onChange={setContactField('company')} />
+              <TextField label="Unternehmensname" value={contact.company} onChange={setContactField('company')} />
               <TextField label="Ihre E-Mail" value={contact.contactEmail} onChange={setContactField('contactEmail')} type="email" required help="Hierhin schicken wir die Bestätigung — kein Newsletter." />
               <TextField label="Ihre Telefonnummer" value={contact.contactPhone} onChange={setContactField('contactPhone')} help="Für kurze Rückfragen. Optional." />
 

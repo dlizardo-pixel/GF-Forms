@@ -40,25 +40,22 @@ export function buildStandardCsv(data) {
   const headers = [
     'Nr.',
     'Straße & Hausnr. Heizungsanlage',
-    'Versorgte Gebäude',
+    'Mehrere Gebäude / Unterstationen (Anzahl)',
     'PLZ',
     'Stadt',
     'Heizungstyp',
-    'Unterstation (Anzahl)',
-    'Leistung kW',
-    'Modell/Info',
     'Fernwärme-Anschlussleistung kW',
-    'Zentrales Warmwasser',
     'Wohneinheiten',
-    'Baujahr/Sanierung',
     'Beheizte Fläche m²',
     'Besonderheiten',
     'Verbrauch letztes Jahr (kWh)',
     'Verbrauch vorletztes Jahr (kWh)',
-    'Verbrauch vor-vorletztes Jahr (kWh)',
     'Hauswart/Kontakt',
     'Telefon',
   ];
+
+  // Kombinierte Frage „mehrere Gebäude/Unterstationen?": Anzahl, sonst Ja/Nein.
+  const supply = (s) => (s.multiSupply === true ? (s.supplyCount || 'Ja') : s.multiSupply === false ? 'Nein' : '');
 
   const lines = [rowToLine(headers)];
 
@@ -67,22 +64,16 @@ export function buildStandardCsv(data) {
       rowToLine([
         i + 1,
         s.streetHeating,
-        s.suppliedBuildings,
+        supply(s),
         s.plz,
         s.city,
         s.heatingType,
-        s.substationPresent ? s.substationCount : '',
-        s.powerKw,
-        s.modelInfo,
         s.heatingType === 'Fernwärme' ? s.districtHeatingConnectionKw : '',
-        jaNein(s.centralHotWater),
         s.residentialUnits,
-        s.constructionYear,
         s.heatedAreaM2,
         s.specialNotes,
         consumptionToKwh(s.consumptionLastYear, s.heatingType) ?? '',
         consumptionToKwh(s.consumptionPrevYear, s.heatingType) ?? '',
-        consumptionToKwh(s.consumptionPrevPrevYear, s.heatingType) ?? '',
         s.caretakerContact,
         s.caretakerPhone,
       ]),

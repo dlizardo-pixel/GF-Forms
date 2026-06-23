@@ -1,16 +1,14 @@
 import { TextField, NumberField, ToggleField } from '../Fields.jsx';
-import { BILLING_CYCLES } from '../../lib/options.js';
-import { ChoiceField } from '../Fields.jsx';
 import { ENERGY_UNITS, unitKeyForHeatingType } from '../../../shared/conversion.js';
 
 /**
- * Alle optionalen / selteneren Felder einer Anlage. Wird sowohl im geführten
- * Editor als auch in der aufklappbaren Detailzeile der Tabelle verwendet, damit
- * die Texte nur an einer Stelle gepflegt werden.
+ * Optionale / seltenere Felder einer Anlage. Wird im geführten Editor und in der
+ * aufklappbaren Detailzeile der Tabelle verwendet (Texte nur an einer Stelle).
  *
- * Bewusst NICHT enthalten (das sind die Pflicht-/Kernfelder, die im geführten
- * Fluss bzw. in den Tabellenspalten erfasst werden):
- * Adresse, PLZ/Stadt, Heizungstyp, beheizte Fläche, Verbrauch letztes Jahr.
+ * Bewusst NICHT enthalten: Adresse, PLZ/Stadt, Heizungstyp, beheizte Fläche,
+ * Verbrauch letztes Jahr (= Kern-/Pflichtfelder). Ebenfalls bewusst weggelassen,
+ * weil sie nicht in die Einsparungsrechnung eingehen: Leistung, Modell/Infos,
+ * Baujahr, „macht Warmwasser?", Abrechnungsturnus, zweites Vorjahr.
  */
 export default function SystemExtraFields({ system, onChange }) {
   const set = (key) => (val) => onChange({ [key]: val });
@@ -18,12 +16,21 @@ export default function SystemExtraFields({ system, onChange }) {
 
   return (
     <div>
-      <TextField
-        label="Versorgt die Anlage noch andere Häuser?"
-        value={system.suppliedBuildings}
-        onChange={set('suppliedBuildings')}
-        help="Nur wenn ja — sonst überspringen."
+      {/* Mehrere Gebäude / Unterstationen — eine Frage (geht in die Preisstufe ein). */}
+      <ToggleField
+        label="Versorgt die Anlage mehrere Gebäude oder gibt es Unterstationen?"
+        value={system.multiSupply}
+        onChange={set('multiSupply')}
+        help="Falls Sie's nicht genau wissen: grob schätzen reicht."
       />
+      {system.multiSupply === true && (
+        <NumberField
+          label="Wie viele Gebäude / Unterstationen sind das?"
+          value={system.supplyCount}
+          onChange={set('supplyCount')}
+          help="Ungefähre Zahl genügt."
+        />
+      )}
 
       <NumberField
         label="Wie viele Wohnungen hängen dran?"
@@ -32,32 +39,7 @@ export default function SystemExtraFields({ system, onChange }) {
         help="Grobe Zahl reicht."
       />
 
-      <ToggleField
-        label="Macht die Anlage auch das Warmwasser?"
-        value={system.centralHotWater}
-        onChange={set('centralHotWater')}
-      />
-
-      <ToggleField
-        label="Gibt es Unterstationen?"
-        value={system.substationPresent}
-        onChange={set('substationPresent')}
-        help="Falls Sie's nicht wissen: kein Problem, einfach offen lassen."
-      />
-      {system.substationPresent === true && (
-        <NumberField label="Wie viele Unterstationen?" value={system.substationCount} onChange={set('substationCount')} />
-      )}
-
-      <NumberField
-        label="Leistung der Anlage (kW)"
-        value={system.powerKw}
-        onChange={set('powerKw')}
-        suffix="kW"
-        help="Steht oft am Kessel oder in den Unterlagen. Optional."
-      />
-      <TextField label="Modell oder weitere Infos zur Anlage" value={system.modelInfo} onChange={set('modelInfo')} />
-
-      {/* Selten – nur bei Fernwärme */}
+      {/* Selten – nur bei Fernwärme (geht in die Preisstufe ein). */}
       {system.heatingType === 'Fernwärme' && (
         <NumberField
           label="Vertraglich vereinbarte Anschlussleistung (kW)"
@@ -68,12 +50,6 @@ export default function SystemExtraFields({ system, onChange }) {
         />
       )}
 
-      <NumberField
-        label="Baujahr oder letzte Sanierung"
-        value={system.constructionYear}
-        onChange={set('constructionYear')}
-        help="Ungefähr reicht. Optional."
-      />
       <TextField
         label="Gibt es etwas Besonderes?"
         value={system.specialNotes}
@@ -86,14 +62,7 @@ export default function SystemExtraFields({ system, onChange }) {
         value={system.consumptionPrevYear}
         onChange={set('consumptionPrevYear')}
         suffix={unit}
-        help="Falls Sie es zur Hand haben. Optional."
-      />
-      <NumberField
-        label="Und im Jahr davor?"
-        value={system.consumptionPrevPrevYear}
-        onChange={set('consumptionPrevPrevYear')}
-        suffix={unit}
-        help="Optional."
+        help="Ein Vorjahr reicht als Plausibilitätscheck. Optional."
       />
 
       {/* Vertrag & Abrechnung – ausdrücklich später möglich */}
@@ -114,12 +83,6 @@ export default function SystemExtraFields({ system, onChange }) {
           <TextField label="E-Mail für den Rechnungsversand" value={system.billingEmail} onChange={set('billingEmail')} />
           <TextField label="Weitere Empfänger" value={system.additionalRecipients} onChange={set('additionalRecipients')} />
           <TextField label="Referenznummer" value={system.referenceNumber} onChange={set('referenceNumber')} />
-          <ChoiceField
-            label="Abrechnungsturnus"
-            value={system.billingCycle}
-            onChange={set('billingCycle')}
-            options={BILLING_CYCLES.filter((b) => b !== '(keine Angabe)')}
-          />
         </div>
       </details>
     </div>
