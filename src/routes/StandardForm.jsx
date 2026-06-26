@@ -7,7 +7,7 @@ import SystemEditor from '../components/standard/SystemEditor.jsx';
 import SystemGrid from '../components/standard/SystemGrid.jsx';
 import { makeSystem, isSystemComplete } from '../lib/standardModel.js';
 import { ENERGY_TYPE_OPTIONS } from '../lib/options.js';
-import { readPrefill } from '../lib/prefill.js';
+import { readPrefill, readEncodedPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
 import { scheduleCloudSave, getCloudId, clearCloudId } from '../lib/draftSync.js';
@@ -20,23 +20,42 @@ export default function StandardForm() {
   const { search } = useLocation();
   const navigate = useNavigate();
   const prefill = useMemo(() => readPrefill(search), [search]);
-  const draft = useMemo(() => loadDraft(DRAFT_KEY), []);
+  // Vorausgefüllter Link von Green Fusion (alle bekannten Anlagen sind drin;
+  // der Kunde ergänzt nur das Fehlende, typischerweise den Heizungstyp).
+  const encoded = useMemo(() => readEncodedPrefill(search), [search]);
+  // Wenn ein Prefill-Link benutzt wird, gewinnt er gegenüber einem alten Entwurf
+  // — sonst hätten Kunden bei einem neuen Link weiter den alten Stand gesehen.
+  const draft = useMemo(() => (encoded ? null : loadDraft(DRAFT_KEY)), [encoded]);
   // „Beides"-Modus: erst dieses (klassische) Formular, danach Sektorkopplung.
   const both = useMemo(() => new URLSearchParams(search).get('both') === '1', [search]);
 
   const defaultProject = {
-    contactName: prefill.contactName,
-    contactRole: prefill.contactRole,
-    company: prefill.company,
-    contactEmail: prefill.contactEmail,
-    systemCount: prefill.systemCount || '',
-    defaultEnergyType: prefill.defaultEnergyType || '(keine Vorgabe)',
+    contactName: encoded?.project?.contactName || prefill.contactName,
+    contactRole: encoded?.project?.contactRole || prefill.contactRole,
+    company: encoded?.project?.company || prefill.company,
+    contactEmail: encoded?.project?.contactEmail || prefill.contactEmail,
+    systemCount: String(encoded?.systems?.length || prefill.systemCount || ''),
+    defaultEnergyType: encoded?.project?.defaultEnergyType || prefill.defaultEnergyType || '(keine Vorgabe)',
   };
 
+  // Initiale Anlagen aus dem Prefill-Link (mit makeSystem als Basis, damit alle
+  // Felder vorhanden sind und das Datenmodell konsistent bleibt).
+  const initialSystems = encoded?.systems
+    ? encoded.systems.map((s) => ({ ...makeSystem(defaultProject), ...s }))
+    : [];
+
+  // Mit Prefill-Link starten wir direkt in der Anlagen-Phase (Daten sind ja schon da).
+  // Ist die Projektebene unvollständig (z. B. fehlende E-Mail), bleiben wir am Anfang.
+  const initialPhase = encoded
+    ? defaultProject.contactEmail && defaultProject.company
+      ? 'systems'
+      : 'project'
+    : 'project';
+
   // phase: 'project' → 'systems' → 'submit'
-  const [phase, setPhase] = useState(draft?.phase ?? 'project');
+  const [phase, setPhase] = useState(draft?.phase ?? initialPhase);
   const [project, setProject] = useState(draft?.project ?? defaultProject);
-  const [systems, setSystems] = useState(draft?.systems ?? []);
+  const [systems, setSystems] = useState(draft?.systems ?? initialSystems);
   const [current, setCurrent] = useState(draft?.current ?? 0);
   const [restored, setRestored] = useState(!!draft);
   const [consent, setConsent] = useState(false); // bewusst nicht gespeichert
@@ -160,6 +179,13 @@ export default function StandardForm() {
           <Hint kind="info">
             <strong>Teil 1 von 2:</strong> Zuerst Ihre klassischen Heizungen. Danach geht es weiter mit
             Wärmepumpe/Solar.
+          </Hint>
+        )}
+
+        {encoded && (
+          <Hint kind="info">
+            <strong>Wir haben Ihre Anlagen für Sie vorbereitet.</strong> Bitte ergänzen Sie noch den
+            Heizungstyp je Anlage und prüfen die Werte — danach können Sie absenden.
           </Hint>
         )}
 
