@@ -5,7 +5,7 @@ import { Hint } from '../Fields.jsx';
 import { isSystemComplete, makeSystem } from '../../lib/standardModel.js';
 import { systemHints } from '../../lib/plausibility.js';
 import SystemExtraFields from './SystemExtraFields.jsx';
-import HeatingTypeField from './HeatingTypeField.jsx';
+import HeatingTypeDropdown from './HeatingTypeDropdown.jsx';
 import ImportModal from './ImportModal.jsx';
 
 // Anzahl der Kernspalten (für colSpan der Detailzeile).
@@ -104,7 +104,6 @@ export default function SystemGrid({ systems, setSystems, project }) {
           <tbody>
             {systems.map((s, i) => {
               const unit = ENERGY_UNITS[unitKeyForHeatingTypes(s.heatingTypes)].unit;
-              const heatingLabel = (s.heatingTypes || []).join(', ');
               const complete = isSystemComplete(s);
               const isOpen = expanded.has(i);
               const hints = systemHints(s);
@@ -142,25 +141,8 @@ export default function SystemGrid({ systems, setSystems, project }) {
                       <input className="gf-col-city" value={s.city} onChange={(e) => updateSystem(i, { city: e.target.value })} />
                     </td>
                     <td>
-                      {/* Mehrfachauswahl → in der Detailzeile; hier nur Anzeige + Aufklappen */}
-                      <button
-                        type="button"
-                        onClick={() => setExpanded((prev) => new Set(prev).add(i))}
-                        title="Heizungstyp(en) in den Details wählen"
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: 'pointer',
-                          font: 'inherit',
-                          padding: '6px 8px',
-                          color: heatingLabel ? 'var(--gf-graphite)' : 'var(--gf-sunstone)',
-                          borderBottom: heatingLabel ? '1px solid transparent' : '2px solid var(--gf-sunstone)',
-                        }}
-                      >
-                        {heatingLabel || '– wählen –'}
-                      </button>
+                      {/* Kompakte Mehrfachauswahl direkt in der Zelle */}
+                      <HeatingTypeDropdown system={s} onChange={(partial) => updateSystem(i, partial)} />
                     </td>
                     <td>
                       <input
@@ -217,7 +199,6 @@ export default function SystemGrid({ systems, setSystems, project }) {
                   {isOpen && (
                     <tr>
                       <td colSpan={COL_COUNT} style={{ background: 'var(--gf-bg)', padding: 'var(--gf-space-4)' }}>
-                        <HeatingTypeField system={s} onChange={(partial) => updateSystem(i, partial)} required />
                         {hints.map((h, k) => (
                           <Hint key={k} kind="soft">
                             {h}
