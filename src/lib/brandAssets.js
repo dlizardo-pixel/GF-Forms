@@ -40,10 +40,13 @@ export const ICONS = {
 export const HEATING_TYPE_ICON = {
   'Gas zentral': ICONS.gas,
   Gaskombi: ICONS.gas,
-  Fernwärme: ICONS.heating,
+  'Hybridanlage (Gas + WP)': ICONS.heatpumpSm,
   Wärmepumpe: ICONS.heatpumpSm,
+  Fernwärme: ICONS.heating,
+  BHKW: ICONS.power,
   Öl: ICONS.heating,
   'Holz-Pellets': ICONS.heating,
+  'Nachtspeicher / Elektro': ICONS.power,
   'Was anderes / weiß nicht': ICONS.tools,
 };
 

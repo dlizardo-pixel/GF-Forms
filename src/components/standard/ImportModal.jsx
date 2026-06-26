@@ -2,12 +2,11 @@ import { useMemo, useState } from 'react';
 import readXlsxFile, { readSheetNames } from 'read-excel-file';
 import { Hint } from '../Fields.jsx';
 import { makeSystem } from '../../lib/standardModel.js';
-import { HEATING_TYPES } from '../../lib/options.js';
 import {
   IMPORT_FIELDS,
   parseText,
   cleanNumber,
-  normalizeHeating,
+  normalizeHeatingMulti,
   detectOrientation,
   transpose,
   findHeaderRow,
@@ -142,8 +141,11 @@ export default function ImportModal({ project, onImport, onClose }) {
       if (ci === undefined || ci === '' || ci < 0) continue;
       const val = row[ci];
       if (val == null || String(val).trim() === '') continue;
-      if (f.key === 'heatingType') s.heatingType = normalizeHeating(val, HEATING_TYPES);
-      else if (f.key === 'heatedAreaM2' || f.key === 'consumptionLastYear') s[f.key] = cleanNumber(val);
+      if (f.key === 'heatingType') {
+        const { types, other } = normalizeHeatingMulti(val);
+        s.heatingTypes = types;
+        s.heatingTypeOther = other;
+      } else if (f.key === 'heatedAreaM2' || f.key === 'consumptionLastYear') s[f.key] = cleanNumber(val);
       else s[f.key] = String(val).trim();
     }
     // Zusammengeschriebene Adresse erkennen: steht „…, 10115 Berlin" in der
@@ -294,11 +296,17 @@ export default function ImportModal({ project, onImport, onClose }) {
                 <tbody>
                   {dataRows.slice(0, 5).map((row, ri) => {
                     const s = rowToSystem(row);
+                    const cellValue = (key) => {
+                      if (key === 'heatingType') {
+                        return [...(s.heatingTypes || []), s.heatingTypeOther].filter(Boolean).join(', ');
+                      }
+                      return s[key];
+                    };
                     return (
                       <tr key={ri}>
                         {IMPORT_FIELDS.map((f) => (
                           <td key={f.key} style={{ padding: '6px 8px' }}>
-                            {s[f.key] || <span style={{ color: 'var(--gf-glaciar-gray)' }}>—</span>}
+                            {cellValue(f.key) || <span style={{ color: 'var(--gf-glaciar-gray)' }}>—</span>}
                           </td>
                         ))}
                       </tr>

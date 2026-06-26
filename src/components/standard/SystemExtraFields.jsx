@@ -1,5 +1,5 @@
 import { TextField, NumberField, ToggleField } from '../Fields.jsx';
-import { ENERGY_UNITS, unitKeyForHeatingType } from '../../../shared/conversion.js';
+import { ENERGY_UNITS, unitKeyForHeatingTypes } from '../../../shared/conversion.js';
 
 /**
  * Optionale / seltenere Felder einer Anlage. Wird im geführten Editor und in der
@@ -12,7 +12,8 @@ import { ENERGY_UNITS, unitKeyForHeatingType } from '../../../shared/conversion.
  */
 export default function SystemExtraFields({ system, onChange }) {
   const set = (key) => (val) => onChange({ [key]: val });
-  const unit = ENERGY_UNITS[unitKeyForHeatingType(system.heatingType)].unit;
+  const unit = ENERGY_UNITS[unitKeyForHeatingTypes(system.heatingTypes)].unit;
+  const isFernwaerme = Array.isArray(system.heatingTypes) && system.heatingTypes.includes('Fernwärme');
 
   return (
     <div>
@@ -40,7 +41,7 @@ export default function SystemExtraFields({ system, onChange }) {
       />
 
       {/* Selten – nur bei Fernwärme (geht in die Preisstufe ein). */}
-      {system.heatingType === 'Fernwärme' && (
+      {isFernwaerme && (
         <NumberField
           label="Vertraglich vereinbarte Anschlussleistung (kW)"
           value={system.districtHeatingConnectionKw}

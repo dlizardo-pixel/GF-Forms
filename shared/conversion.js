@@ -17,23 +17,27 @@ export const ENERGY_UNITS = {
   waermepumpe: { unit: 'kWh Strom', factor: 1.0, note: 'Elektrische Energie wird bereits in kWh angegeben – keine Umrechnung nötig.' },
   pellets: { unit: 'kg', factor: 4.8, note: '1 kg Holzpellets ≈ 4,8 kWh (Näherung; ca. 4,6–5,0 kWh)' },
   oel: { unit: 'Liter', factor: 10.0, note: '1 Liter Heizöl ≈ 10 kWh (Näherung; ca. 9,8–10,6 kWh)' },
+  strom: { unit: 'kWh Strom', factor: 1.0, note: 'Stromverbrauch wird bereits in kWh angegeben – keine Umrechnung nötig.' },
   sonstiges: { unit: 'kWh', factor: 1.0, note: 'Bitte den Verbrauch direkt in kWh angeben.' },
 };
 
 /**
- * Ordnet einen Heizungstyp dem passenden Einheiten-Schlüssel zu.
- * @param {string} heatingType – Wert aus dem Formular (z. B. "Gas", "Fernwärme")
- * @returns {string} Schlüssel aus ENERGY_UNITS
+ * Ordnet EINEN Heizungstyp dem passenden Einheiten-Schlüssel zu.
+ * @param {string} heatingType – z. B. "Gas zentral", "Fernwärme"
  */
 export function unitKeyForHeatingType(heatingType) {
   switch (heatingType) {
     case 'Gas zentral':
     case 'Gaskombi':
-      return 'gas'; // Gas wird in m³ erfasst
+    case 'BHKW':
+    case 'Hybridanlage (Gas + WP)':
+      return 'gas'; // Gas wird in m³ erfasst (auch bei BHKW/Hybrid die maßgebliche Größe)
     case 'Fernwärme':
       return 'fernwaerme';
     case 'Wärmepumpe':
       return 'waermepumpe';
+    case 'Nachtspeicher / Elektro':
+      return 'strom';
     case 'Holz-Pellets':
       return 'pellets';
     case 'Öl':
@@ -44,16 +48,31 @@ export function unitKeyForHeatingType(heatingType) {
 }
 
 /**
- * Rechnet einen Verbrauchswert in kWh um.
- * @param {number|string} value – eingegebener Wert in Kunden-Einheit
- * @param {string} heatingType – Heizungstyp zur Bestimmung der Einheit
- * @returns {number|null} Verbrauch in kWh (gerundet) oder null, wenn kein Wert
+ * Bestimmt die Verbrauchs-Einheit aus einer Liste von Heizungstypen (Mehrfach-
+ * auswahl). Nimmt den ersten Typ mit eindeutiger Einheit (z. B. bei „Gas + WP"
+ * zählt der Gasverbrauch in m³).
+ * @param {string[]|string} heatingTypes
  */
-export function consumptionToKwh(value, heatingType) {
+export function unitKeyForHeatingTypes(heatingTypes) {
+  const arr = Array.isArray(heatingTypes) ? heatingTypes : heatingTypes ? [heatingTypes] : [];
+  for (const t of arr) {
+    const k = unitKeyForHeatingType(t);
+    if (k !== 'sonstiges') return k;
+  }
+  return arr.length ? unitKeyForHeatingType(arr[0]) : 'sonstiges';
+}
+
+/**
+ * Rechnet einen Verbrauchswert in kWh um.
+ * @param {number|string} value
+ * @param {string[]|string} heatingTypes – Heizungstyp(en) zur Bestimmung der Einheit
+ * @returns {number|null}
+ */
+export function consumptionToKwh(value, heatingTypes) {
   if (value === '' || value === null || value === undefined) return null;
   const num = Number(value);
   if (Number.isNaN(num)) return null;
-  const { factor } = ENERGY_UNITS[unitKeyForHeatingType(heatingType)];
+  const { factor } = ENERGY_UNITS[unitKeyForHeatingTypes(heatingTypes)];
   return Math.round(num * factor);
 }
 
@@ -61,11 +80,11 @@ export function consumptionToKwh(value, heatingType) {
  * Liefert eine menschenlesbare Beschreibung der Umrechnung – für die
  * sichtbare Kennzeichnung in der Oberfläche und in der E-Mail-Zusammenfassung.
  */
-export function describeConversion(value, heatingType) {
+export function describeConversion(value, heatingTypes) {
   if (value === '' || value === null || value === undefined) return null;
-  const key = unitKeyForHeatingType(heatingType);
+  const key = unitKeyForHeatingTypes(heatingTypes);
   const meta = ENERGY_UNITS[key];
-  const kwh = consumptionToKwh(value, heatingType);
+  const kwh = consumptionToKwh(value, heatingTypes);
   if (meta.factor === 1.0) {
     return `${formatNumber(value)} ${meta.unit}`;
   }

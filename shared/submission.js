@@ -51,7 +51,7 @@ export function validateSubmission(data) {
       if (!isFilled(s.streetHeating)) errors.push(`Anlage ${n}: Straße & Hausnummer der Heizungsanlage fehlt.`);
       if (!isFilled(s.plz)) errors.push(`Anlage ${n}: PLZ fehlt.`);
       if (!isFilled(s.city)) errors.push(`Anlage ${n}: Stadt fehlt.`);
-      if (!isFilled(s.heatingType)) errors.push(`Anlage ${n}: Heizungstyp fehlt.`);
+      if (!Array.isArray(s.heatingTypes) || s.heatingTypes.length === 0) errors.push(`Anlage ${n}: Heizungstyp fehlt.`);
       if (!isFilled(s.heatedAreaM2)) errors.push(`Anlage ${n}: Beheizte Fläche fehlt.`);
       if (!isFilled(s.consumptionLastYear)) errors.push(`Anlage ${n}: Jahresverbrauch (letztes Jahr) fehlt.`);
     });
@@ -117,15 +117,16 @@ export function buildSummaryHtml(data) {
 
     (data.systems || []).forEach((s, i) => {
       const supply = s.multiSupply === true ? `Ja${isFilled(s.supplyCount) ? ` (${s.supplyCount})` : ''}` : s.multiSupply === false ? 'Nein' : '';
+      const heating = [...(s.heatingTypes || []), s.heatingTypeOther].filter(Boolean).join(', ');
       html += section(`Anlage ${i + 1}: ${s.streetHeating || ''} ${s.plz || ''} ${s.city || ''}`.trim(), [
-        kv('Heizungstyp', s.heatingType),
+        kv('Heizungstyp', heating),
         kv('Mehrere Gebäude / Unterstationen', supply),
         kv('Fernwärme-Anschlussleistung', isFilled(s.districtHeatingConnectionKw) ? `${s.districtHeatingConnectionKw} kW` : ''),
         kv('Wohneinheiten', s.residentialUnits),
         kv('Beheizte Fläche', isFilled(s.heatedAreaM2) ? `${s.heatedAreaM2} m²` : ''),
         kv('Besonderheiten', s.specialNotes),
-        kv('Verbrauch letztes Jahr', describeConversion(s.consumptionLastYear, s.heatingType)),
-        kv('Verbrauch vorletztes Jahr', describeConversion(s.consumptionPrevYear, s.heatingType)),
+        kv('Verbrauch letztes Jahr', describeConversion(s.consumptionLastYear, s.heatingTypes)),
+        kv('Verbrauch vorletztes Jahr', describeConversion(s.consumptionPrevYear, s.heatingTypes)),
         kv('Hauswart / Kontakt', s.caretakerContact),
         kv('Telefon', s.caretakerPhone),
         kv('Heizkreise', s.heatingCircuits),

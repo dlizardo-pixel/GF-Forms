@@ -8,7 +8,8 @@ export function makeSystem(project = {}, prev = null) {
     city: '',
     lat: null,
     lng: null,
-    heatingType: '',
+    heatingTypes: [], // Mehrfachauswahl
+    heatingTypeOther: '', // Freitext bei „Was anderes / weiß nicht"
     // Mehrere Gebäude / Unterstationen (eine kombinierte Frage – geht in die Preisstufe ein)
     multiSupply: undefined,
     supplyCount: '',
@@ -32,7 +33,7 @@ export function makeSystem(project = {}, prev = null) {
 
   // Projekt-Vorgabe Energieträger als Standard übernehmen (pro Anlage änderbar).
   if (project.defaultEnergyType && project.defaultEnergyType !== '(keine Vorgabe)') {
-    base.heatingType = project.defaultEnergyType;
+    base.heatingTypes = [project.defaultEnergyType];
   }
 
   // "Werte von letzter Anlage übernehmen": Vorgänger als Ausgangswert kopieren,
@@ -57,7 +58,8 @@ export function isSystemComplete(s) {
     !!s.streetHeating?.trim() &&
     !!s.plz?.trim() &&
     !!s.city?.trim() &&
-    !!s.heatingType?.trim() &&
+    Array.isArray(s.heatingTypes) &&
+    s.heatingTypes.length > 0 &&
     !!String(s.heatedAreaM2).trim() &&
     !!String(s.consumptionLastYear).trim()
   );

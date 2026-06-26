@@ -36,7 +36,7 @@ export default function PrefillLinkBuilder({ onClose }) {
   // Heizungstyp bewusst NICHT mitgeben — das soll der Kunde ergänzen.
   const buildPayload = () => ({
     project: { contactName, company, contactEmail },
-    systems: systems.map((s) => ({ ...s, heatingType: '' })),
+    systems: systems.map((s) => ({ ...s, heatingTypes: [], heatingTypeOther: '' })),
   });
 
   async function generate() {
