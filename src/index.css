@@ -686,8 +686,8 @@ input.gf-col-num {
   border-radius: var(--gf-radius-lg);
   box-shadow: var(--gf-shadow-md);
   padding: var(--gf-space-1);
-  max-height: 340px;
   overflow-y: auto;
+  text-align: left;
 }
 .gf-hdrop-item {
   display: flex;
@@ -702,11 +702,16 @@ input.gf-col-num {
 .gf-hdrop-item:hover {
   background: var(--gf-frosted-mint);
 }
-.gf-hdrop-item input {
+.gf-hdrop-item input[type='checkbox'] {
+  flex: 0 0 auto;
   width: 16px;
   height: 16px;
+  margin: 0;
   accent-color: var(--gf-primary);
   cursor: pointer;
+}
+.gf-hdrop-item span {
+  flex: 1 1 auto;
 }
 .gf-hdrop-other {
   margin-top: var(--gf-space-2);
