@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HEATING_TYPES, HEATING_OTHER } from '../../lib/options.js';
 
 /**
@@ -6,12 +7,14 @@ import { HEATING_TYPES, HEATING_OTHER } from '../../lib/options.js';
  * Ein Klick öffnet ein kleines Aufklapp-Menü mit Häkchen (nur Namen, keine
  * Ikonen). Ist „Was anderes / weiß nicht" angehakt, erscheint ein Freitextfeld.
  *
- * Das Menü wird `position: fixed` anhand der Button-Position gezeichnet, damit
- * es nicht vom horizontalen Scroll-Container der Tabelle abgeschnitten wird.
+ * Das Menü wird per Portal an <body> gehängt und `position: fixed` anhand der
+ * Button-Position gezeichnet. So erbt es weder die Tabellen-CSS-Regeln (die
+ * sonst die Checkboxen verzerren) noch wird es vom Scroll-Container der Tabelle
+ * abgeschnitten.
  */
 export default function HeatingTypeDropdown({ system, onChange }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 220 });
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 220, maxHeight: 340 });
   const btnRef = useRef(null);
   const menuRef = useRef(null);
   const types = system.heatingTypes || [];
@@ -19,7 +22,13 @@ export default function HeatingTypeDropdown({ system, onChange }) {
   useLayoutEffect(() => {
     if (open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 210) });
+      const top = r.bottom + 4;
+      setPos({
+        top,
+        left: r.left,
+        width: Math.max(r.width, 230),
+        maxHeight: Math.max(180, window.innerHeight - top - 12),
+      });
     }
   }, [open]);
 
@@ -33,8 +42,12 @@ export default function HeatingTypeDropdown({ system, onChange }) {
         setOpen(false);
       }
     };
-    // Beim Scrollen schließen, damit das fixierte Menü nicht „abdriftet".
-    const onScroll = () => setOpen(false);
+    const onScroll = (e) => {
+      // Scrollen IM Menü erlauben; nur bei Scroll außerhalb schließen,
+      // damit das fixierte Menü nicht „abdriftet".
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener('mousedown', onDocClick);
     window.addEventListener('scroll', onScroll, true);
     return () => {
@@ -66,28 +79,30 @@ export default function HeatingTypeDropdown({ system, onChange }) {
       >
         {label || '– wählen –'}
       </button>
-      {open && (
-        <div
-          ref={menuRef}
-          className="gf-hdrop-menu"
-          style={{ top: pos.top, left: pos.left, minWidth: pos.width }}
-        >
-          {HEATING_TYPES.map((t) => (
-            <label key={t} className="gf-hdrop-item">
-              <input type="checkbox" checked={types.includes(t)} onChange={() => toggle(t)} />
-              <span>{t}</span>
-            </label>
-          ))}
-          {types.includes(HEATING_OTHER) && (
-            <input
-              className="gf-input gf-hdrop-other"
-              value={system.heatingTypeOther || ''}
-              placeholder="Bitte kurz beschreiben"
-              onChange={(e) => onChange({ heatingTypeOther: e.target.value })}
-            />
-          )}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="gf-hdrop-menu"
+            style={{ top: pos.top, left: pos.left, minWidth: pos.width, maxHeight: pos.maxHeight }}
+          >
+            {HEATING_TYPES.map((t) => (
+              <label key={t} className="gf-hdrop-item">
+                <input type="checkbox" checked={types.includes(t)} onChange={() => toggle(t)} />
+                <span>{t}</span>
+              </label>
+            ))}
+            {types.includes(HEATING_OTHER) && (
+              <input
+                className="gf-input gf-hdrop-other"
+                value={system.heatingTypeOther || ''}
+                placeholder="Bitte kurz beschreiben"
+                onChange={(e) => onChange({ heatingTypeOther: e.target.value })}
+              />
+            )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
