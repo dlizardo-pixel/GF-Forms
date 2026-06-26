@@ -24,3 +24,13 @@ CREATE TABLE IF NOT EXISTS entries (
 
 CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries (updated_at);
 CREATE INDEX IF NOT EXISTS idx_entries_status ON entries (status);
+
+-- Vorausgefüllte Links: Green Fusion legt die bekannten Anlagendaten ab und
+-- verschickt nur eine kurze ID im Link (statt der kompletten Daten in der URL).
+CREATE TABLE IF NOT EXISTS prefills (
+  id         TEXT PRIMARY KEY,
+  data       TEXT NOT NULL,                 -- { project, systems } als JSON
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_prefills_created ON prefills (created_at);
