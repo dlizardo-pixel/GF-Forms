@@ -12,8 +12,20 @@
 
 export const RETENTION_DAYS = 30;
 
+// Vorausgefüllte Links dürfen etwas länger leben (Kunde klickt evtl. erst Wochen später).
+export const PREFILL_RETENTION_DAYS = 90;
+
 const nowIso = () => new Date().toISOString();
-const cutoffIso = () => new Date(Date.now() - RETENTION_DAYS * 86400000).toISOString();
+const cutoffIso = (days = RETENTION_DAYS) => new Date(Date.now() - days * 86400000).toISOString();
+
+/** Kurze, URL-taugliche Zufalls-ID (~12 Zeichen). */
+function shortId() {
+  const bytes = new Uint8Array(9);
+  crypto.getRandomValues(bytes);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 /** Kurz-Infos für die Übersichtsliste aus den Eingaben ziehen. */
 function summarize(type, data) {
@@ -124,4 +136,32 @@ export async function getEntry(db, id) {
     /* ignore */
   }
   return { ...row, data };
+}
+
+// ---- Vorausgefüllte Links ---------------------------------------------------
+
+/** Abgelaufene Prefill-Links entfernen. */
+export async function purgeExpiredPrefills(db) {
+  await db.prepare('DELETE FROM prefills WHERE created_at < ?').bind(cutoffIso(PREFILL_RETENTION_DAYS)).run();
+}
+
+/** Prefill-Daten speichern, kurze ID zurückgeben. */
+export async function createPrefill(db, payload) {
+  const id = shortId();
+  await db
+    .prepare('INSERT INTO prefills (id, data, created_at) VALUES (?, ?, ?)')
+    .bind(id, JSON.stringify(payload ?? {}), nowIso())
+    .run();
+  return id;
+}
+
+/** Prefill-Daten anhand der ID holen (oder null). */
+export async function getPrefill(db, id) {
+  const row = await db.prepare('SELECT data FROM prefills WHERE id = ?').bind(id).first();
+  if (!row) return null;
+  try {
+    return JSON.parse(row.data);
+  } catch {
+    return null;
+  }
 }

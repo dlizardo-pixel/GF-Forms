@@ -15,6 +15,7 @@ import { buildStandardCsv, buildSektorkopplungCsv } from './shared/csv.js';
  */
 function devApiPlugin() {
   const entries = new Map(); // id → Eintrag (nur im Speicher, pro Dev-Sitzung)
+  const prefills = new Map(); // id → Prefill-Payload (Dev)
 
   const summarize = (type, data) => {
     if (type === 'standard') {
@@ -79,9 +80,15 @@ function devApiPlugin() {
       });
 
       // Admin (jedes nicht-leere Passwort wird im Dev akzeptiert).
-      server.middlewares.use('/api/admin', (req, res) => {
+      server.middlewares.use('/api/admin', async (req, res) => {
         if (!req.headers['x-admin-key']) return sendJson(res, 401, { ok: false, error: 'Nicht autorisiert.' });
         const url = new URL(req.url, 'http://localhost');
+        if (url.pathname.startsWith('/prefill') && req.method === 'POST') {
+          const { payload } = await readBody(req);
+          const id = 'dev-' + Math.random().toString(36).slice(2, 12);
+          prefills.set(id, payload || {});
+          return sendJson(res, 200, { ok: true, id });
+        }
         if (url.pathname.startsWith('/entries')) {
           const list = [...entries.values()].map(({ data, ...rest }) => rest).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
           return sendJson(res, 200, { ok: true, entries: list });
@@ -99,6 +106,14 @@ function devApiPlugin() {
           return sendJson(res, 200, { ok: true, entry });
         }
         sendJson(res, 404, { ok: false });
+      });
+
+      // Öffentlicher Prefill-Abruf (für den Kundenlink).
+      server.middlewares.use('/api/prefill', (req, res) => {
+        const url = new URL(req.url, 'http://localhost');
+        const payload = prefills.get(url.searchParams.get('id'));
+        if (!payload) return sendJson(res, 404, { ok: false, error: 'Dieser Link ist abgelaufen oder ungültig.' });
+        sendJson(res, 200, { ok: true, payload });
       });
     },
   };

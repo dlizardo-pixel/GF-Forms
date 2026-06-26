@@ -20,12 +20,13 @@ export default function StandardForm() {
   const { search } = useLocation();
   const navigate = useNavigate();
   const prefill = useMemo(() => readPrefill(search), [search]);
-  // Vorausgefüllter Link von Green Fusion (alle bekannten Anlagen sind drin;
-  // der Kunde ergänzt nur das Fehlende, typischerweise den Heizungstyp).
+  // Vorausgefüllter Link von Green Fusion: entweder lang (?prefill=<base64>) oder
+  // kurz (?p=<id>, Daten liegen in D1). Der Kunde ergänzt nur das Fehlende (Heizungstyp).
   const encoded = useMemo(() => readEncodedPrefill(search), [search]);
-  // Wenn ein Prefill-Link benutzt wird, gewinnt er gegenüber einem alten Entwurf
-  // — sonst hätten Kunden bei einem neuen Link weiter den alten Stand gesehen.
-  const draft = useMemo(() => (encoded ? null : loadDraft(DRAFT_KEY)), [encoded]);
+  const shortId = useMemo(() => new URLSearchParams(search).get('p') || '', [search]);
+  // Ein vorhandener Entwurf gewinnt (Fortschritt nicht verlieren). Nur wenn KEIN
+  // Entwurf existiert, greift der Prefill-Link.
+  const draft = useMemo(() => loadDraft(DRAFT_KEY), []);
   // „Beides"-Modus: erst dieses (klassische) Formular, danach Sektorkopplung.
   const both = useMemo(() => new URLSearchParams(search).get('both') === '1', [search]);
 
@@ -38,19 +39,11 @@ export default function StandardForm() {
     defaultEnergyType: encoded?.project?.defaultEnergyType || prefill.defaultEnergyType || '(keine Vorgabe)',
   };
 
-  // Initiale Anlagen aus dem Prefill-Link (mit makeSystem als Basis, damit alle
-  // Felder vorhanden sind und das Datenmodell konsistent bleibt).
+  // Initiale Anlagen aus dem (langen) Prefill-Link; Heizungstyp bleibt leer.
   const initialSystems = encoded?.systems
-    ? encoded.systems.map((s) => ({ ...makeSystem(defaultProject), ...s }))
+    ? encoded.systems.map((s) => ({ ...makeSystem(defaultProject), ...s, heatingType: s.heatingType || '' }))
     : [];
-
-  // Mit Prefill-Link starten wir direkt in der Anlagen-Phase (Daten sind ja schon da).
-  // Ist die Projektebene unvollständig (z. B. fehlende E-Mail), bleiben wir am Anfang.
-  const initialPhase = encoded
-    ? defaultProject.contactEmail && defaultProject.company
-      ? 'systems'
-      : 'project'
-    : 'project';
+  const initialPhase = encoded && defaultProject.contactEmail && defaultProject.company ? 'systems' : 'project';
 
   // phase: 'project' → 'systems' → 'submit'
   const [phase, setPhase] = useState(draft?.phase ?? initialPhase);
@@ -58,9 +51,46 @@ export default function StandardForm() {
   const [systems, setSystems] = useState(draft?.systems ?? initialSystems);
   const [current, setCurrent] = useState(draft?.current ?? 0);
   const [restored, setRestored] = useState(!!draft);
+  const [isPrefill, setIsPrefill] = useState(!!encoded && !draft);
+  // Kurzlink (?p=) lädt die Daten asynchron nach – solange zeigen wir einen Ladehinweis.
+  const [prefillLoading, setPrefillLoading] = useState(!!shortId && !draft);
   const [consent, setConsent] = useState(false); // bewusst nicht gespeichert
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
+
+  // Kurzlink: Prefill-Daten vom Server holen und anwenden (nur wenn kein Entwurf existiert).
+  useEffect(() => {
+    if (!shortId || draft) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/prefill?id=' + encodeURIComponent(shortId));
+        const body = await res.json().catch(() => ({}));
+        if (!cancelled && body.ok && body.payload) {
+          const pl = body.payload;
+          const proj = {
+            contactName: pl.project?.contactName || '',
+            contactRole: pl.project?.contactRole || '',
+            company: pl.project?.company || '',
+            contactEmail: pl.project?.contactEmail || '',
+            systemCount: String(pl.systems?.length || ''),
+            defaultEnergyType: pl.project?.defaultEnergyType || '(keine Vorgabe)',
+          };
+          setProject(proj);
+          setSystems((pl.systems || []).map((s) => ({ ...makeSystem(proj), ...s, heatingType: s.heatingType || '' })));
+          setIsPrefill(true);
+          if (proj.contactEmail && proj.company) setPhase('systems');
+        }
+      } catch {
+        /* Link ungültig/abgelaufen – Kunde startet dann mit leerem Formular */
+      }
+      if (!cancelled) setPrefillLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shortId]);
 
   // Zwischenspeichern im Browser + (entprellt) in der Cloud bei jeder Änderung.
   useEffect(() => {
@@ -159,6 +189,21 @@ export default function StandardForm() {
 
   const wideShell = phase === 'systems' && mode === 'grid';
 
+  // Kurzlink: kurzer Ladehinweis, während die vorbereiteten Daten geholt werden.
+  if (prefillLoading) {
+    return (
+      <div className="gf-page">
+        <TopBar />
+        <div className="gf-center">
+          <div style={{ textAlign: 'center', color: 'var(--gf-steel-smoke)' }}>
+            <div className="gf-spinner" style={{ margin: '0 auto 12px', borderTopColor: 'var(--gf-primary)' }} />
+            Einen Moment — wir laden Ihre vorbereiteten Anlagen…
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="gf-page">
       <TopBar />
@@ -182,7 +227,7 @@ export default function StandardForm() {
           </Hint>
         )}
 
-        {encoded && (
+        {isPrefill && (
           <Hint kind="info">
             <strong>Wir haben Ihre Anlagen für Sie vorbereitet.</strong> Bitte ergänzen Sie noch den
             Heizungstyp je Anlage und prüfen die Werte — danach können Sie absenden.

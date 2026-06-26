@@ -259,10 +259,13 @@ Voraussetzung: Wrangler ist installiert (ist als Abhängigkeit dabei → `npx wr
    `database_id` eintragen (ersetzt `REPLACE_WITH_YOUR_DATABASE_ID`).
    - Für **EU-Datenhaltung** beim Anlegen die passende Region wählen
      (z. B. `--location weur` für Westeuropa).
-3. **Tabelle anlegen** (Schema einspielen):
+3. **Tabellen anlegen** (Schema einspielen):
    ```bash
    npx wrangler d1 execute gf-forms-db --remote --file=./schema.sql
    ```
+   > Das Schema ist idempotent (`CREATE TABLE IF NOT EXISTS`). Nach Updates – z. B.
+   > der neuen Tabelle `prefills` für vorausgefüllte Links – einfach erneut
+   > ausführen; bestehende Daten bleiben erhalten.
 4. **Bindung in Cloudflare Pages setzen:** Projekt → **Settings → Functions →
    D1 database bindings** → Variablenname **`DB`** mit der Datenbank `gf-forms-db`
    verknüpfen (für Production und ggf. Preview).
@@ -390,11 +393,25 @@ GF-Forms/
   Fläche, Heizungstyp, Verbrauch), Vertrag/Abrechnung eingeklappt.
 - **Sanfte Hinweise** statt harter Fehler (`src/lib/plausibility.js`).
 
+### Vorausgefüllte Links (für Kunden)
+
+Im Admin-Bereich (`/admin`) gibt es **„+ Vorausgefüllten Link erstellen"**: Green
+Fusion trägt die bekannten Daten ein (Ansprechpartner + Anlagen per Excel/CSV-Import)
+und bekommt einen **kurzen Link** zum Verschicken. Der Kunde klickt → das Formular
+ist schon ausgefüllt → er ergänzt nur den Heizungstyp.
+
+- Kurzlink `…/standard?p=<id>`: Daten liegen in D1 (Tabelle `prefills`, 90 Tage),
+  Endpunkte `functions/api/admin/prefill.js` (anlegen, geschützt) und
+  `functions/api/prefill.js` (abrufen, öffentlich – die zufällige ID ist der Schlüssel).
+- Ohne D1 erzeugt der Generator automatisch einen langen, selbsttragenden Link
+  `…/standard?prefill=<base64>` (Logik in `src/lib/prefill.js`).
+- Ein vorhandener Browser-Entwurf hat Vorrang, damit Kundenfortschritt nicht verloren geht.
+
 ### Bewusst noch nicht enthalten (spätere Stufen)
 
-- **Vorausfüllen aus HubSpot** über personalisierte Links. Vorbereitet ist es
-  bereits: `src/lib/prefill.js` liest passende URL-Parameter aus
-  (z. B. `…/standard?company=Musterbau&email=erika@…&systemCount=3`).
+- **Vorausfüllen aus HubSpot**: technisch dieselben Mechanismen wie oben;
+  `src/lib/prefill.js` liest auch einfache URL-Parameter
+  (z. B. `…/standard?company=Musterbau&email=erika@…`).
 - **Foto-Auslesen** von Abrechnung oder Typenschild.
 - **PDF-Listen automatisch auslesen** (Excel/CSV-Import ist enthalten; PDFs
   laufen über den „Liste per Mail"-Notausgang).

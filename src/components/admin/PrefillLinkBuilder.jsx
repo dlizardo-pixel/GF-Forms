@@ -4,14 +4,13 @@ import ImportModal from '../standard/ImportModal.jsx';
 import { encodePrefill } from '../../lib/prefill.js';
 
 /**
- * Werkzeug zum Erzeugen eines vorausgefüllten Formular-Links für einen
- * Kunden. Green Fusion gibt die bekannten Daten ein (Ansprechpartner + die
- * Anlagen, idealerweise per Excel-/CSV-Import) und bekommt einen Link, den
- * sie dem Kunden per Mail schicken. Der Kunde klickt → das Formular ist schon
- * gefüllt; er ergänzt nur das Fehlende (z. B. den Heizungstyp).
+ * Werkzeug zum Erzeugen eines vorausgefüllten Formular-Links für einen Kunden.
+ * Green Fusion gibt die bekannten Daten ein (Ansprechpartner + Anlagen per
+ * Excel-/CSV-Import) und bekommt einen kurzen Link zum Verschicken.
  *
- * Implementierung: alle Daten werden in den URL-Parameter `?prefill=…`
- * verpackt (base64-url-kodiert). Kein zusätzlicher Server-Aufruf nötig.
+ * Der Link nutzt eine kurze ID (`?p=…`); die Daten liegen in D1. Ist keine
+ * Datenbank erreichbar, wird als Rückfalllösung ein langer, selbst­tragender
+ * Link (`?prefill=<base64>`) erzeugt.
  */
 export default function PrefillLinkBuilder({ onClose }) {
   const [contactName, setContactName] = useState('');
@@ -19,26 +18,51 @@ export default function PrefillLinkBuilder({ onClose }) {
   const [contactEmail, setContactEmail] = useState('');
   const [systems, setSystems] = useState([]);
   const [importOpen, setImportOpen] = useState(false);
+  const [link, setLink] = useState('');
+  const [linkNote, setLinkNote] = useState('');
+  const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleImport = (newSystems) => {
     setSystems((arr) => [...arr, ...newSystems]);
+    setLink(''); // Daten geändert → alter Link ungültig
     setImportOpen(false);
   };
-
-  // Heizungstyp aus dem Prefill bewusst NICHT mit übernehmen — das ist genau
-  // das Feld, das der Kunde noch ausfüllen soll. So sieht er, dass dort noch
-  // etwas zu tun ist.
-  const cleanedSystems = systems.map((s) => ({ ...s, heatingType: '' }));
-
-  const payload = {
-    project: { contactName, company, contactEmail },
-    systems: cleanedSystems,
+  const removeSystem = (i) => {
+    setSystems((arr) => arr.filter((_, idx) => idx !== i));
+    setLink('');
   };
-  const encoded = systems.length ? encodePrefill(payload) : '';
-  // Basis-URL aus dem aktuellen Origin – funktioniert lokal und live.
-  const link = encoded ? `${window.location.origin}/standard?prefill=${encoded}` : '';
-  const tooLong = link.length > 6000; // Browser-Limit-Faustregel
+
+  // Heizungstyp bewusst NICHT mitgeben — das soll der Kunde ergänzen.
+  const buildPayload = () => ({
+    project: { contactName, company, contactEmail },
+    systems: systems.map((s) => ({ ...s, heatingType: '' })),
+  });
+
+  async function generate() {
+    setGenerating(true);
+    setLinkNote('');
+    const payload = buildPayload();
+    const key = sessionStorage.getItem('gf-admin-key') || '';
+    try {
+      const res = await fetch('/api/admin/prefill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+        body: JSON.stringify({ payload }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.ok && body.id) {
+        setLink(`${window.location.origin}/standard?p=${body.id}`);
+      } else {
+        setLink(`${window.location.origin}/standard?prefill=${encodePrefill(payload)}`);
+        setLinkNote('Kurzlink nicht verfügbar (Datenbank nicht erreichbar) — stattdessen Langlink erzeugt.');
+      }
+    } catch {
+      setLink(`${window.location.origin}/standard?prefill=${encodePrefill(payload)}`);
+      setLinkNote('Kurzlink nicht verfügbar — stattdessen Langlink erzeugt.');
+    }
+    setGenerating(false);
+  }
 
   async function copyLink() {
     try {
@@ -46,11 +70,9 @@ export default function PrefillLinkBuilder({ onClose }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* Kopieren nicht möglich (z. B. http) – egal, Link steht trotzdem im Feld */
+      /* z. B. unter http nicht möglich – Link steht trotzdem im Feld */
     }
   }
-
-  const removeSystem = (i) => setSystems((arr) => arr.filter((_, idx) => idx !== i));
 
   return (
     <div className="gf-modal-overlay" onClick={onClose}>
@@ -60,14 +82,14 @@ export default function PrefillLinkBuilder({ onClose }) {
           <button className="gf-btn gf-btn-text" onClick={onClose}>Schließen</button>
         </div>
         <p className="gf-help" style={{ marginTop: 4 }}>
-          Tragen Sie hier ein, was Sie über den Kunden schon wissen. Der Kunde bekommt einen Link, in dem
-          alles bereits eingetragen ist — er ergänzt nur noch den Heizungstyp und bestätigt.
+          Tragen Sie ein, was Sie über den Kunden schon wissen. Der Kunde bekommt einen Link, in dem alles
+          bereits eingetragen ist — er ergänzt nur noch den Heizungstyp und bestätigt.
         </p>
 
         <h4 style={{ marginBottom: 8 }}>Ansprechpartner</h4>
-        <TextField label="Name" value={contactName} onChange={setContactName} />
-        <TextField label="Unternehmensname" value={company} onChange={setCompany} />
-        <TextField label="E-Mail" value={contactEmail} onChange={setContactEmail} type="email" />
+        <TextField label="Name" value={contactName} onChange={(v) => { setContactName(v); setLink(''); }} />
+        <TextField label="Unternehmensname" value={company} onChange={(v) => { setCompany(v); setLink(''); }} />
+        <TextField label="E-Mail" value={contactEmail} onChange={(v) => { setContactEmail(v); setLink(''); }} type="email" />
 
         <h4 style={{ marginTop: 16, marginBottom: 8 }}>Anlagen ({systems.length})</h4>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -75,7 +97,7 @@ export default function PrefillLinkBuilder({ onClose }) {
             Anlagen importieren (Excel/CSV)
           </button>
           {systems.length > 0 && (
-            <button type="button" className="gf-btn gf-btn-text" onClick={() => setSystems([])}>
+            <button type="button" className="gf-btn gf-btn-text" onClick={() => { setSystems([]); setLink(''); }}>
               Alle entfernen
             </button>
           )}
@@ -121,41 +143,34 @@ export default function PrefillLinkBuilder({ onClose }) {
           </div>
         )}
 
-        <h4 style={{ marginTop: 16, marginBottom: 8 }}>Link</h4>
-        {!systems.length && (
-          <Hint kind="soft">Bitte mindestens eine Anlage hinzufügen, damit ein Link entstehen kann.</Hint>
-        )}
-        {tooLong && (
-          <Hint kind="soft">
-            Achtung: Dieser Link ist sehr lang ({link.length.toLocaleString('de-DE')} Zeichen) und funktioniert
-            in manchen E-Mail-Programmen evtl. nicht zuverlässig. Bei sehr vielen Anlagen besser den
-            Notausgang-Mailweg nutzen.
-          </Hint>
-        )}
-        <textarea
-          readOnly
-          className="gf-textarea"
-          value={link}
-          placeholder="(noch leer)"
-          style={{ minHeight: 100, fontFamily: 'monospace', fontSize: 12 }}
-          onFocus={(e) => e.target.select()}
-        />
-
         <div className="gf-actions">
           <span />
-          <button
-            type="button"
-            className="gf-btn gf-btn-primary"
-            disabled={!link}
-            onClick={copyLink}
-          >
-            {copied ? '✓ Kopiert' : 'Link kopieren'}
+          <button type="button" className="gf-btn gf-btn-primary" disabled={!systems.length || generating} onClick={generate}>
+            {generating ? <span className="gf-spinner" /> : link ? 'Link neu erstellen' : 'Link erstellen'}
           </button>
         </div>
 
-        {importOpen && (
-          <ImportModal project={{}} onImport={handleImport} onClose={() => setImportOpen(false)} />
+        {link && (
+          <>
+            <h4 style={{ marginTop: 16, marginBottom: 8 }}>Link zum Verschicken</h4>
+            {linkNote && <Hint kind="soft">{linkNote}</Hint>}
+            <textarea
+              readOnly
+              className="gf-textarea"
+              value={link}
+              style={{ minHeight: 70, fontFamily: 'monospace', fontSize: 13 }}
+              onFocus={(e) => e.target.select()}
+            />
+            <div className="gf-actions">
+              <span />
+              <button type="button" className="gf-btn gf-btn-primary" onClick={copyLink}>
+                {copied ? '✓ Kopiert' : 'Link kopieren'}
+              </button>
+            </div>
+          </>
         )}
+
+        {importOpen && <ImportModal project={{}} onImport={handleImport} onClose={() => setImportOpen(false)} />}
       </div>
     </div>
   );
