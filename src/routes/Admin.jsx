@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TopBar } from '../components/Layout.jsx';
 import { Hint } from '../components/Fields.jsx';
+import PrefillLinkBuilder from '../components/admin/PrefillLinkBuilder.jsx';
 
 /**
  * Interne Admin-Übersicht: zeigt alle eingereichten Erfassungen UND
@@ -19,6 +20,7 @@ export default function Admin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState(null);
+  const [linkBuilderOpen, setLinkBuilderOpen] = useState(false);
 
   async function loadEntries(useKey) {
     setLoading(true);
@@ -120,7 +122,12 @@ export default function Admin() {
       <div className="gf-shell gf-shell-wide">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <h1 className="gf-step-title" style={{ marginBottom: 0 }}>Erfassungen &amp; Entwürfe</h1>
-          <button className="gf-btn gf-btn-ghost" onClick={logout}>Abmelden</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="gf-btn gf-btn-primary" onClick={() => setLinkBuilderOpen(true)}>
+              + Vorausgefüllten Link erstellen
+            </button>
+            <button className="gf-btn gf-btn-ghost" onClick={logout}>Abmelden</button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
@@ -220,6 +227,8 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+      {linkBuilderOpen && <PrefillLinkBuilder onClose={() => setLinkBuilderOpen(false)} />}
     </div>
   );
 }
