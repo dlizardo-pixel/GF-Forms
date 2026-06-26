@@ -147,7 +147,7 @@ export function ToggleField({ label, value, onChange, help }) {
 }
 
 /** Mehrfachauswahl als Chips */
-export function MultiSelectField({ label, value = [], onChange, options, help }) {
+export function MultiSelectField({ label, value = [], onChange, options, help, required }) {
   const toggle = (key) => {
     const set = new Set(value);
     set.has(key) ? set.delete(key) : set.add(key);
@@ -155,7 +155,10 @@ export function MultiSelectField({ label, value = [], onChange, options, help })
   };
   return (
     <div className="gf-field">
-      <label className="gf-label">{label}</label>
+      <label className="gf-label">
+        {label}
+        {required && <span className="gf-req">*</span>}
+      </label>
       {help && <p className="gf-help">{help}</p>}
       <div className="gf-chips">
         {options.map((opt) => {

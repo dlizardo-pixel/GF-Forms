@@ -50,6 +50,9 @@ export function buildStandardCsv(data) {
 
   // Kombinierte Frage „mehrere Gebäude/Unterstationen?": Anzahl, sonst Ja/Nein.
   const supply = (s) => (s.multiSupply === true ? (s.supplyCount || 'Ja') : s.multiSupply === false ? 'Nein' : '');
+  // Heizungstyp(en) als lesbarer Text inkl. Freitext.
+  const heating = (s) => [...(s.heatingTypes || []), s.heatingTypeOther].filter(Boolean).join(', ');
+  const isFernwaerme = (s) => Array.isArray(s.heatingTypes) && s.heatingTypes.includes('Fernwärme');
 
   const lines = [rowToLine(headers)];
 
@@ -61,13 +64,13 @@ export function buildStandardCsv(data) {
         supply(s),
         s.plz,
         s.city,
-        s.heatingType,
-        s.heatingType === 'Fernwärme' ? s.districtHeatingConnectionKw : '',
+        heating(s),
+        isFernwaerme(s) ? s.districtHeatingConnectionKw : '',
         s.residentialUnits,
         s.heatedAreaM2,
         s.specialNotes,
-        consumptionToKwh(s.consumptionLastYear, s.heatingType) ?? '',
-        consumptionToKwh(s.consumptionPrevYear, s.heatingType) ?? '',
+        consumptionToKwh(s.consumptionLastYear, s.heatingTypes) ?? '',
+        consumptionToKwh(s.consumptionPrevYear, s.heatingTypes) ?? '',
         s.caretakerContact,
         s.caretakerPhone,
       ]),

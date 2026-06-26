@@ -6,18 +6,25 @@
  * (z. B. „Gas zentral", „Gaskombi") statt technischer Bezeichnungen.
  */
 
+// Label der „Sonstiges"-Option, die ein Freitextfeld öffnet.
+export const HEATING_OTHER = 'Was anderes / weiß nicht';
+
 export const HEATING_TYPES = [
   'Gas zentral',
   'Gaskombi',
-  'Fernwärme',
+  'Hybridanlage (Gas + WP)',
   'Wärmepumpe',
+  'Fernwärme',
+  'BHKW',
   'Öl',
   'Holz-Pellets',
-  'Was anderes / weiß nicht',
+  'Nachtspeicher / Elektro',
+  HEATING_OTHER,
 ];
 
-// Vorgabe Energieträger auf Projektebene (entspricht den Heizungstypen).
-export const ENERGY_TYPE_OPTIONS = ['(keine Vorgabe)', ...HEATING_TYPES];
+// Vorgabe Energieträger auf Projektebene (Einfachauswahl; „Sonstiges" ergibt als
+// Vorgabe keinen Sinn und bleibt daher außen vor).
+export const ENERGY_TYPE_OPTIONS = ['(keine Vorgabe)', ...HEATING_TYPES.filter((t) => t !== HEATING_OTHER)];
 
 export const BILLING_CYCLES = ['(keine Angabe)', 'monatlich', 'quartalsweise', 'halbjährlich', 'jährlich'];
 

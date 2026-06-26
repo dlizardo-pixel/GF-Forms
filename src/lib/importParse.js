@@ -75,22 +75,85 @@ function lineFieldHits(cells) {
   return hits;
 }
 
-/** Trennzeichen einer eingefügten Tabelle erraten (Tab → Semikolon → Komma). */
-function detectDelimiter(line) {
-  if (line.includes('\t')) return '\t';
-  if (line.includes(';')) return ';';
-  if (line.includes(',')) return ',';
-  return '\t';
+/**
+ * Trennzeichen erraten: zählt Tab/Semikolon/Komma, ABER nur außerhalb von
+ * Anführungszeichen (sonst verfälschen Kommas in Texten wie "Gas, Fernwärme"
+ * die Erkennung). Häufigstes Zeichen gewinnt; Gleichstand → Tab vor ; vor ,.
+ */
+function detectDelimiter(text) {
+  const counts = { '\t': 0, ';': 0, ',': 0 };
+  let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQ && text[i + 1] === '"') {
+        i++;
+        continue;
+      }
+      inQ = !inQ;
+    } else if (!inQ && (c === '\t' || c === ';' || c === ',')) {
+      counts[c]++;
+    }
+  }
+  let best = '\t';
+  let bestN = -1;
+  for (const d of ['\t', ';', ',']) {
+    if (counts[d] > bestN) {
+      bestN = counts[d];
+      best = d;
+    }
+  }
+  return best;
 }
 
-/** Eingefügten Text in eine Matrix (Zeilen × Zellen) umwandeln. */
+/**
+ * Eingefügten/Datei-Text in eine Matrix (Zeilen × Zellen) umwandeln.
+ * Vollwertiger CSV-Parser nach RFC 4180: Anführungszeichen, darin eingebettete
+ * Trennzeichen UND Zeilenumbrüche, sowie verdoppelte Anführungszeichen ("").
+ * Das ist wichtig für reale Exporte, in denen z. B. ein Gebäudename und die
+ * Straße in einer Zelle mit Zeilenumbruch stehen.
+ */
 export function parseText(text) {
-  const lines = String(text || '')
-    .split(/\r?\n/)
-    .filter((l) => l.trim() !== '');
-  if (lines.length === 0) return [];
-  const delim = detectDelimiter(lines[0]);
-  return lines.map((l) => l.split(delim).map((c) => c.trim()));
+  const s = String(text || '');
+  if (!s.trim()) return [];
+  const delim = detectDelimiter(s);
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQ = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQ) {
+      if (c === '"') {
+        if (s[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQ = false;
+        }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQ = true;
+    } else if (c === delim) {
+      row.push(field);
+      field = '';
+    } else if (c === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (c !== '\r') {
+      field += c;
+    }
+  }
+  row.push(field);
+  rows.push(row);
+  // Felder säubern (eingebettete Zeilenumbrüche → ", "), komplett leere Zeilen weg.
+  return rows
+    .map((r) => r.map((c) => c.replace(/\s*\r?\n\s*/g, ', ').trim()))
+    .filter((r) => r.some((c) => c !== ''));
 }
 
 /** Matrix transponieren (Zeilen ↔ Spalten). */
@@ -235,6 +298,40 @@ export function normalizeHeating(raw, allowed) {
     if (k && (nv === k || nv.includes(k))) return val;
   }
   return v;
+}
+
+// Regeln für die Mehrfach-Erkennung von Heizungstypen aus Freitext.
+// Reihenfolge: spezifischere zuerst (Hybrid/BHKW vor „Gas").
+const HEATING_MULTI_RULES = [
+  { type: 'Hybridanlage (Gas + WP)', kw: ['hybrid'] },
+  { type: 'BHKW', kw: ['bhkw', 'blockheiz', 'kraftwaerme'] },
+  { type: 'Gaskombi', kw: ['gaskombi', 'kombitherme', 'kombigas', 'etagenheiz'] },
+  { type: 'Gas zentral', kw: ['gas', 'erdgas', 'gaskessel', 'gasbrennwert', 'fluessiggas'] },
+  { type: 'Wärmepumpe', kw: ['waermepumpe', 'luftwasser', 'erdwaerme', 'sole'] },
+  { type: 'Fernwärme', kw: ['fernwaerme', 'nahwaerme'] },
+  { type: 'Öl', kw: ['oel', 'heizoel', 'oelkessel'] },
+  { type: 'Holz-Pellets', kw: ['pellet', 'holz', 'hackschnitzel', 'scheitholz', 'biomasse'] },
+  { type: 'Nachtspeicher / Elektro', kw: ['nachtspeicher', 'elektro', 'stromheiz'] },
+];
+
+/**
+ * Erkennt aus einem Freitext (z. B. „BHKW und Gaskessel", „Gas, Fernwärme")
+ * ALLE passenden Heizungstypen. Wird nichts erkannt, landet der Originaltext
+ * als Freitext unter „Was anderes / weiß nicht".
+ * @returns {{ types: string[], other: string }}
+ */
+export function normalizeHeatingMulti(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return { types: [], other: '' };
+  const nv = normalizeText(v);
+  const types = [];
+  for (const rule of HEATING_MULTI_RULES) {
+    if (rule.kw.some((k) => nv.includes(normalizeText(k))) && !types.includes(rule.type)) {
+      types.push(rule.type);
+    }
+  }
+  if (types.length) return { types, other: '' };
+  return { types: ['Was anderes / weiß nicht'], other: v };
 }
 
 /**

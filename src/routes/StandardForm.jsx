@@ -41,7 +41,7 @@ export default function StandardForm() {
 
   // Initiale Anlagen aus dem (langen) Prefill-Link; Heizungstyp bleibt leer.
   const initialSystems = encoded?.systems
-    ? encoded.systems.map((s) => ({ ...makeSystem(defaultProject), ...s, heatingType: s.heatingType || '' }))
+    ? encoded.systems.map((s) => ({ ...makeSystem(defaultProject), ...s, heatingTypes: s.heatingTypes || [], heatingTypeOther: s.heatingTypeOther || '' }))
     : [];
   const initialPhase = encoded && defaultProject.contactEmail && defaultProject.company ? 'systems' : 'project';
 
@@ -77,7 +77,7 @@ export default function StandardForm() {
             defaultEnergyType: pl.project?.defaultEnergyType || '(keine Vorgabe)',
           };
           setProject(proj);
-          setSystems((pl.systems || []).map((s) => ({ ...makeSystem(proj), ...s, heatingType: s.heatingType || '' })));
+          setSystems((pl.systems || []).map((s) => ({ ...makeSystem(proj), ...s, heatingTypes: s.heatingTypes || [], heatingTypeOther: s.heatingTypeOther || '' })));
           setIsPrefill(true);
           if (proj.contactEmail && proj.company) setPhase('systems');
         }
