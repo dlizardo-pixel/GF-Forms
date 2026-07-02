@@ -246,8 +246,17 @@ Domain – Sie tragen dort einen kleinen Text ein.
 Die Anwendung speichert Eingaben **automatisch in der Cloud** (zusätzlich zum
 Browser), damit nichts verloren geht – auch wenn jemand nicht absendet oder den
 Zugang verliert. Green Fusion sieht alle Entwürfe **und** Einreichungen in einer
-**passwortgeschützten Übersicht** unter `/admin` und kann pro Eintrag die CSV
-herunterladen.
+**passwortgeschützten Übersicht** unter `/admin`. Pro Eintrag lässt sich dort:
+
+- die **CSV herunterladen**,
+- ein **Öffnen-Link** erzeugen (öffnet das Formular mit allen bereits erfassten
+  Daten – zum erneuten Ansehen oder zum Weiterbearbeiten durch den Kunden; gleiches
+  Verfahren wie die vorausgefüllten Links),
+- der Eintrag in den **Papierkorb** legen und dort **wiederherstellen** oder
+  **endgültig löschen**.
+
+> Die Papierkorb-Spalte (`deleted_at`) wird bei bestehenden Datenbanken automatisch
+> ergänzt – es ist kein manuelles Migrations-Skript nötig.
 
 ### Datenbank einrichten (einmalig)
 
@@ -317,8 +326,10 @@ GF-Forms/
 │       ├── submit.js          ⭐ Validierung + Brevo-Versand + D1 (eingereicht)
 │       ├── draft.js           Cloud-Zwischenspeichern (Entwürfe)
 │       └── admin/
-│           ├── entries.js     Liste für die Admin-Übersicht
-│           └── entry.js       Einzeleintrag + CSV-Download
+│           ├── entries.js     Liste für die Admin-Übersicht (+ Papierkorb)
+│           ├── entry.js       Einzeleintrag + CSV-Download
+│           ├── prefill.js     Vorausgefüllte/Öffnen-Links anlegen
+│           └── trash.js       Papierkorb: löschen / wiederherstellen / endgültig löschen
 │
 ├── shared/                    Von Oberfläche UND Server gemeinsam genutzte Logik
 │   ├── conversion.js          Verbrauchs-Umrechnung in kWh (dokumentierte Faktoren)

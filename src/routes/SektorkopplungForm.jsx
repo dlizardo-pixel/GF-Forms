@@ -38,6 +38,9 @@ export default function SektorkopplungForm() {
     contactPhone: '',
   };
 
+  // Kurzlink (?p=<id>): vorbereiteter/erneut geöffneter Datensatz aus D1.
+  const shortId = useMemo(() => new URLSearchParams(search).get('p') || '', [search]);
+
   const [phase, setPhase] = useState(draft?.phase ?? 'contact'); // 'contact' | 'sites' | 'submit'
   const [contact, setContact] = useState(draft?.contact ?? defaultContact);
   const [sites, setSites] = useState(draft?.sites ?? [makeSite()]);
@@ -46,6 +49,40 @@ export default function SektorkopplungForm() {
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [prefillLoading, setPrefillLoading] = useState(!!shortId && !draft);
+
+  // Kurzlink: Daten vom Server holen und anwenden (nur wenn kein Entwurf existiert).
+  useEffect(() => {
+    if (!shortId || draft) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/prefill?id=' + encodeURIComponent(shortId));
+        const body = await res.json().catch(() => ({}));
+        if (!cancelled && body.ok && body.payload) {
+          const pl = body.payload;
+          const c = pl.contact || {};
+          setContact({
+            contactName: c.contactName || '',
+            company: c.company || '',
+            contactEmail: c.contactEmail || '',
+            contactPhone: c.contactPhone || '',
+          });
+          if (Array.isArray(pl.sites) && pl.sites.length) {
+            setSites(pl.sites.map((s) => ({ ...makeSite(), ...s })));
+          }
+          if (c.contactEmail) setPhase('sites');
+        }
+      } catch {
+        /* Link ungültig/abgelaufen – Kunde startet dann mit leerem Formular */
+      }
+      if (!cancelled) setPrefillLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shortId]);
 
   useEffect(() => {
     saveDraft(DRAFT_KEY, { phase, contact, sites, current });
@@ -116,6 +153,21 @@ export default function SektorkopplungForm() {
     `mailto:${GF_CONTACT_EMAIL}` +
     `?subject=${encodeURIComponent('Anlagenliste – ' + (contact.company || 'Ihr Unternehmen'))}` +
     `&body=${encodeURIComponent('Hallo,\n\nanbei unsere vorhandene Liste (Excel/PDF).\n\nViele Grüße\n' + (contact.contactName || ''))}`;
+
+  // Kurzlink: kurzer Ladehinweis, während die vorbereiteten Daten geholt werden.
+  if (prefillLoading) {
+    return (
+      <div className="gf-page">
+        <TopBar />
+        <div className="gf-center">
+          <div style={{ textAlign: 'center', color: 'var(--gf-steel-smoke)' }}>
+            <div className="gf-spinner" style={{ margin: '0 auto 12px', borderTopColor: 'var(--gf-primary)' }} />
+            Einen Moment — wir laden Ihre vorbereiteten Anlagen…
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="gf-page">

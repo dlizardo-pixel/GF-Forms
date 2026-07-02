@@ -10,9 +10,10 @@ export async function onRequestGet({ request, env }) {
   if (denied) return denied;
   if (!env.DB) return json({ ok: true, entries: [] });
 
+  const trashed = new URL(request.url).searchParams.get('trashed') === '1';
   try {
     await purgeExpired(env.DB);
-    const entries = await listEntries(env.DB);
+    const entries = await listEntries(env.DB, { trashed });
     return json({ ok: true, entries });
   } catch (err) {
     return json({ ok: false, error: err.message }, 500);
