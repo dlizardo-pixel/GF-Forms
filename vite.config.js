@@ -89,8 +89,22 @@ function devApiPlugin() {
           prefills.set(id, payload || {});
           return sendJson(res, 200, { ok: true, id });
         }
+        if (url.pathname.startsWith('/trash') && req.method === 'POST') {
+          const { id, action } = await readBody(req);
+          const entry = entries.get(id);
+          if (!entry) return sendJson(res, 404, { ok: false, error: 'Nicht gefunden.' });
+          if (action === 'delete') entry.deleted_at = new Date().toISOString();
+          else if (action === 'restore') entry.deleted_at = null;
+          else if (action === 'purge') entries.delete(id);
+          else return sendJson(res, 400, { ok: false, error: 'Unbekannte Aktion.' });
+          return sendJson(res, 200, { ok: true });
+        }
         if (url.pathname.startsWith('/entries')) {
-          const list = [...entries.values()].map(({ data, ...rest }) => rest).sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+          const trashed = url.searchParams.get('trashed') === '1';
+          const list = [...entries.values()]
+            .filter((e) => (trashed ? !!e.deleted_at : !e.deleted_at))
+            .map(({ data, ...rest }) => rest)
+            .sort((a, b) => (trashed ? (b.deleted_at || '').localeCompare(a.deleted_at || '') : b.updated_at.localeCompare(a.updated_at)));
           return sendJson(res, 200, { ok: true, entries: list });
         }
         if (url.pathname.startsWith('/entry')) {

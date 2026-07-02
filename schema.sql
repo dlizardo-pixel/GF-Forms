@@ -19,8 +19,14 @@ CREATE TABLE IF NOT EXISTS entries (
   data          TEXT NOT NULL,            -- vollständige Eingaben als JSON
   created_at    TEXT NOT NULL,            -- ISO-Zeitstempel
   updated_at    TEXT NOT NULL,
-  submitted_at  TEXT
+  submitted_at  TEXT,
+  deleted_at    TEXT                      -- gesetzt = im Papierkorb (soft delete)
 );
+
+-- Bestehende Datenbanken: fügt die Papierkorb-Spalte nachträglich hinzu.
+-- Fehlermeldung „duplicate column name: deleted_at" bedeutet, dass sie schon
+-- existiert – dann einfach ignorieren. (Der Code migriert zusätzlich selbst.)
+-- ALTER TABLE entries ADD COLUMN deleted_at TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries (updated_at);
 CREATE INDEX IF NOT EXISTS idx_entries_status ON entries (status);

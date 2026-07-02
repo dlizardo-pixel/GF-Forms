@@ -18,6 +18,21 @@ export const PREFILL_RETENTION_DAYS = 90;
 const nowIso = () => new Date().toISOString();
 const cutoffIso = (days = RETENTION_DAYS) => new Date(Date.now() - days * 86400000).toISOString();
 
+// Sorgt dafür, dass Bestands-Datenbanken die Spalte `deleted_at` (Papierkorb)
+// bekommen, ohne dass jemand von Hand ein Migrations-Skript ausführen muss.
+// SQLite kennt kein „ADD COLUMN IF NOT EXISTS", daher fangen wir den Fehler ab.
+// Wird pro Worker-Instanz nur einmal versucht.
+let schemaReady = false;
+async function ensureSchema(db) {
+  if (schemaReady) return;
+  try {
+    await db.prepare('ALTER TABLE entries ADD COLUMN deleted_at TEXT').run();
+  } catch {
+    /* Spalte existiert bereits – ignorieren */
+  }
+  schemaReady = true;
+}
+
 /** Kurze, URL-taugliche Zufalls-ID (~12 Zeichen). */
 function shortId() {
   const bytes = new Uint8Array(9);
@@ -53,6 +68,20 @@ function summarize(type, data) {
 /** Abgelaufene Einträge entfernen (Aufbewahrungsfrist). */
 export async function purgeExpired(db) {
   await db.prepare('DELETE FROM entries WHERE updated_at < ?').bind(cutoffIso()).run();
+}
+
+/** In den Papierkorb legen (deleted=true) oder wiederherstellen (deleted=false). */
+export async function setEntryDeleted(db, id, deleted) {
+  await ensureSchema(db);
+  await db
+    .prepare('UPDATE entries SET deleted_at = ? WHERE id = ?')
+    .bind(deleted ? nowIso() : null, id)
+    .run();
+}
+
+/** Endgültig löschen (Papierkorb leeren). */
+export async function hardDeleteEntry(db, id) {
+  await db.prepare('DELETE FROM entries WHERE id = ?').bind(id).run();
 }
 
 /**
@@ -114,12 +143,18 @@ export async function markSubmitted(db, { id, type, data }) {
   return useId;
 }
 
-/** Übersichtsliste (ohne den großen Daten-Blob). */
-export async function listEntries(db) {
+/**
+ * Übersichtsliste (ohne den großen Daten-Blob).
+ * `trashed=false` → normale Einträge, `trashed=true` → Papierkorb.
+ */
+export async function listEntries(db, { trashed = false } = {}) {
+  await ensureSchema(db);
+  const where = trashed ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL';
+  const order = trashed ? 'deleted_at' : 'updated_at';
   const res = await db
     .prepare(
-      `SELECT id, type, status, company, contact_name, contact_email, system_count, created_at, updated_at, submitted_at
-       FROM entries ORDER BY updated_at DESC LIMIT 500`,
+      `SELECT id, type, status, company, contact_name, contact_email, system_count, created_at, updated_at, submitted_at, deleted_at
+       FROM entries WHERE ${where} ORDER BY ${order} DESC LIMIT 500`,
     )
     .all();
   return res.results || [];
