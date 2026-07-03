@@ -122,6 +122,42 @@ function devApiPlugin() {
         sendJson(res, 404, { ok: false });
       });
 
+      // Integrations-API (externe Tools): im Dev wird jeder nicht-leere
+      // Bearer-Token akzeptiert; live prüft functions/api/v1/prefill-link.js
+      // gegen das Secret PREFILL_API_TOKEN.
+      server.middlewares.use('/api/v1/prefill-link', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204;
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+          return res.end();
+        }
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false });
+        const auth = req.headers['authorization'] || '';
+        if (!auth.startsWith('Bearer ') || !auth.slice(7).trim()) {
+          return sendJson(res, 401, { ok: false, error: 'Nicht autorisiert.' });
+        }
+        const body = await readBody(req);
+        const { type, payload } = body || {};
+        if (type !== 'standard' && type !== 'sektorkopplung') {
+          return sendJson(res, 400, { ok: false, error: "type muss 'standard' oder 'sektorkopplung' sein." });
+        }
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          return sendJson(res, 400, { ok: false, error: 'payload fehlt oder ist kein Objekt.' });
+        }
+        if (type === 'standard' && (typeof payload.project !== 'object' || !Array.isArray(payload.systems))) {
+          return sendJson(res, 400, { ok: false, error: "Für type 'standard' braucht payload die Felder 'project' (Objekt) und 'systems' (Liste)." });
+        }
+        if (type === 'sektorkopplung' && (typeof payload.contact !== 'object' || !Array.isArray(payload.sites))) {
+          return sendJson(res, 400, { ok: false, error: "Für type 'sektorkopplung' braucht payload die Felder 'contact' (Objekt) und 'sites' (Liste)." });
+        }
+        const id = 'dev-' + Math.random().toString(36).slice(2, 12);
+        prefills.set(id, payload);
+        const origin = `http://${req.headers.host || 'localhost:5173'}`;
+        sendJson(res, 200, { ok: true, id, url: `${origin}/${type === 'standard' ? 'standard' : 'sektorkopplung'}?p=${id}` });
+      });
+
       // Öffentlicher Prefill-Abruf (für den Kundenlink).
       server.middlewares.use('/api/prefill', (req, res) => {
         const url = new URL(req.url, 'http://localhost');

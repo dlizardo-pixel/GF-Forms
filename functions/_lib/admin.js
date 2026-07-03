@@ -23,3 +23,21 @@ export function adminGuard(request, env) {
   }
   return null;
 }
+
+/**
+ * Prüft den Zugriff auf die Integrations-API (externe Tools) über
+ * `Authorization: Bearer <PREFILL_API_TOKEN>`. Eigenes Secret, damit das
+ * Admin-Passwort nicht in fremde Tools kopiert werden muss.
+ * Gibt eine Fehler-Response zurück, wenn nicht berechtigt – sonst null (= ok).
+ */
+export function bearerGuard(request, env) {
+  if (!env.PREFILL_API_TOKEN) {
+    return json({ ok: false, error: 'API ist nicht konfiguriert (PREFILL_API_TOKEN fehlt).' }, 503);
+  }
+  const header = request.headers.get('authorization') || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token || token !== env.PREFILL_API_TOKEN) {
+    return json({ ok: false, error: 'Nicht autorisiert.' }, 401);
+  }
+  return null;
+}

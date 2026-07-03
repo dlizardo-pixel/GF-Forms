@@ -147,6 +147,7 @@ Environment variables → „Add variable"**. Legen Sie diese vier Variablen an
 | `BREVO_SENDER_EMAIL` | `noreply@green-fusion.de` | Verifizierte Absenderadresse (Abschnitt 6). |
 | `BREVO_SENDER_NAME` | `Green Fusion` | Anzeigename des Absenders (optional). |
 | `ADMIN_PASSWORD` | `langes-zufälliges-passwort` | **Als „Secret" markieren.** Passwort für die Admin-Übersicht `/admin`. Ohne dieses Passwort ist der Admin-Bereich deaktiviert. |
+| `PREFILL_API_TOKEN` | `langer-zufälliger-token` | **Als „Secret" markieren.** Optional: schaltet die Integrations-API frei (Abschnitt 6c / `docs/API.md`). Ohne Token ist die API deaktiviert. |
 
 **Den Brevo-API-Schlüssel erstellen:**
 1. Bei Brevo anmelden: <https://app.brevo.com>.
@@ -302,6 +303,26 @@ Voraussetzung: Wrangler ist installiert (ist als Abhängigkeit dabei → `npx wr
 > Cloud gespeichert (kein Fehler). Bei reinem `npm run dev` simuliert ein
 > In-Memory-Speicher die Cloud, und `/admin` akzeptiert jedes Passwort (nur lokal).
 
+---
+
+## 6c. Integrations-API (Formulare mit anderen Tools verbinden)
+
+Externe Tools (Scripts, Claude, CRM …) können per API einen **vorausgefüllten
+Formular-Link** erzeugen — z. B. um aus Meeting-Transcripts (Kickscale)
+automatisch Erfassungslinks zu bauen:
+
+```
+POST /api/v1/prefill-link          (Authorization: Bearer <PREFILL_API_TOKEN>)
+{ "type": "standard", "payload": { "project": {…}, "systems": [{…}] } }
+→ { "ok": true, "url": "https://…/standard?p=abc123" }
+```
+
+- Freischalten: Secret **`PREFILL_API_TOKEN`** in Cloudflare setzen
+  (Abschnitt 5). Ohne Token ist die API deaktiviert.
+- Vollständige Doku mit Feldreferenz und Beispielen: **[`docs/API.md`](docs/API.md)**.
+- Für den Kickscale-Workflow gibt es ein Claude-Skill:
+  `.claude/skills/kickscale-link/` („erstell einen Formular-Link für Firma X").
+
 ## 7. Projektstruktur
 
 ```
@@ -325,6 +346,8 @@ GF-Forms/
 │   └── api/
 │       ├── submit.js          ⭐ Validierung + Brevo-Versand + D1 (eingereicht)
 │       ├── draft.js           Cloud-Zwischenspeichern (Entwürfe)
+│       ├── v1/
+│       │   └── prefill-link.js Integrations-API: Prefill-Link erzeugen (docs/API.md)
 │       └── admin/
 │           ├── entries.js     Liste für die Admin-Übersicht (+ Papierkorb)
 │           ├── entry.js       Einzeleintrag + CSV-Download
