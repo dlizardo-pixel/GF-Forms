@@ -69,9 +69,13 @@ export function unitKeyForHeatingTypes(heatingTypes) {
  * @returns {number|null}
  */
 export function consumptionToKwh(value, heatingTypes) {
-  if (value === '' || value === null || value === undefined) return null;
-  const num = Number(value);
-  if (Number.isNaN(num)) return null;
+  if (value === null || value === undefined) return null;
+  const str = String(value).trim();
+  if (str === '') return null; // auch reine Leerzeichen zählen als „keine Angabe"
+  const num = Number(str);
+  // 0 (oder negativ) ist kein sinnvoller Jahresverbrauch → wie „keine Angabe"
+  // behandeln, damit in CSV/Zusammenfassung keine irreführende 0 auftaucht.
+  if (Number.isNaN(num) || num <= 0) return null;
   const { factor } = ENERGY_UNITS[unitKeyForHeatingTypes(heatingTypes)];
   return Math.round(num * factor);
 }
@@ -81,10 +85,10 @@ export function consumptionToKwh(value, heatingTypes) {
  * sichtbare Kennzeichnung in der Oberfläche und in der E-Mail-Zusammenfassung.
  */
 export function describeConversion(value, heatingTypes) {
-  if (value === '' || value === null || value === undefined) return null;
+  const kwh = consumptionToKwh(value, heatingTypes);
+  if (kwh === null) return null; // keine (sinnvolle) Angabe → nichts anzeigen
   const key = unitKeyForHeatingTypes(heatingTypes);
   const meta = ENERGY_UNITS[key];
-  const kwh = consumptionToKwh(value, heatingTypes);
   if (meta.factor === 1.0) {
     return `${formatNumber(value)} ${meta.unit}`;
   }

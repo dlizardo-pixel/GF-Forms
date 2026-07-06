@@ -27,7 +27,7 @@
  */
 
 import { buildSubmission } from '../../shared/submission.js';
-import { markSubmitted } from '../_lib/store.js';
+import { markSubmitted, setEmailStatus } from '../_lib/store.js';
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 
@@ -83,14 +83,27 @@ export async function onRequestPost(context) {
 
   // Einreichung in der Datenbank festhalten (best effort – stört den Versand nicht).
   // Aktualisiert einen ggf. vorhandenen Entwurf (data.draftId) auf 'submitted'.
+  let entryId = null;
   if (env.DB) {
     try {
-      await markSubmitted(env.DB, { id: data.draftId, type: data.type, data });
+      entryId = await markSubmitted(env.DB, { id: data.draftId, type: data.type, data });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('D1-Speicherung der Einreichung fehlgeschlagen:', err);
     }
   }
+
+  // Mail-Status am Eintrag vermerken, damit ein Versand-Problem im Admin
+  // sichtbar ist (statt still verloren zu gehen). Best effort.
+  const recordEmailStatus = async (status, error = '') => {
+    if (!entryId || !env.DB) return;
+    try {
+      await setEmailStatus(env.DB, entryId, status, error);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Mail-Status konnte nicht gespeichert werden:', err);
+    }
+  };
 
   const apiKey = env.BREVO_API_KEY;
   const recipient = env.GF_RECIPIENT_EMAIL;
@@ -101,21 +114,28 @@ export async function onRequestPost(context) {
   if (!apiKey) {
     // eslint-disable-next-line no-console
     console.log('[Mock] Kein BREVO_API_KEY gesetzt – es wird keine E-Mail verschickt.');
+    await recordEmailStatus('kein_api_key', 'BREVO_API_KEY ist in dieser Umgebung nicht gesetzt.');
     return json({ ok: true, mock: true });
   }
 
   if (!recipient || !senderEmail) {
-    return json(
-      { ok: false, errors: ['Server ist nicht vollständig konfiguriert (GF_RECIPIENT_EMAIL / BREVO_SENDER_EMAIL fehlt).'] },
-      500,
-    );
+    // Konfigurationsfehler: Die Daten SIND gespeichert – also Erfolg für die
+    // Kundin, aber deutliche Warnung im Admin (sofern D1 vorhanden).
+    const msg = 'GF_RECIPIENT_EMAIL / BREVO_SENDER_EMAIL fehlt in der Server-Konfiguration.';
+    // eslint-disable-next-line no-console
+    console.error('E-Mail-Versand übersprungen:', msg);
+    if (entryId) {
+      await recordEmailStatus('fehlgeschlagen', msg);
+      return json({ ok: true });
+    }
+    return json({ ok: false, errors: ['Server ist nicht vollständig konfiguriert (GF_RECIPIENT_EMAIL / BREVO_SENDER_EMAIL fehlt).'] }, 500);
   }
 
   const sender = { email: senderEmail, name: senderName };
   const csvBase64 = toBase64(result.csv);
 
+  // Schritt 3: E-Mail an Green Fusion – Zusammenfassung + CSV als Anhang.
   try {
-    // Schritt 3: E-Mail an Green Fusion – Zusammenfassung + CSV als Anhang.
     await sendBrevoEmail(apiKey, {
       sender,
       to: [{ email: recipient }],
@@ -127,25 +147,40 @@ export async function onRequestPost(context) {
       htmlContent: result.summaryHtml,
       attachment: [{ content: csvBase64, name: result.csvFilename }],
     });
-
-    // Schritt 4: Bestätigungs-E-Mail an den Kunden.
-    if (result.customerEmail) {
-      await sendBrevoEmail(apiKey, {
-        sender,
-        to: [{ email: result.customerEmail, name: result.customerName || undefined }],
-        subject: 'Vielen Dank – Ihre Angaben sind bei uns angekommen',
-        htmlContent: result.confirmationHtml,
-      });
-    }
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('E-Mail-Versand fehlgeschlagen:', err);
+    if (entryId) {
+      // Daten sind gespeichert → Erfolg für die Kundin, rote Warnung im Admin.
+      await recordEmailStatus('fehlgeschlagen', String(err.message || err));
+      return json({ ok: true });
+    }
+    // Ohne D1 wären die Daten sonst komplett verloren → Fehler anzeigen.
     return json(
       { ok: false, errors: ['Der E-Mail-Versand ist fehlgeschlagen. Bitte versuchen Sie es später erneut.'] },
       502,
     );
   }
 
+  // Schritt 4: Bestätigungs-E-Mail an den Kunden (Fehler hier blockiert nichts –
+  // die GF-Benachrichtigung ist raus, das Wichtigste ist erledigt).
+  let confirmationError = '';
+  if (result.customerEmail) {
+    try {
+      await sendBrevoEmail(apiKey, {
+        sender,
+        to: [{ email: result.customerEmail, name: result.customerName || undefined }],
+        subject: 'Vielen Dank – Ihre Angaben sind bei uns angekommen',
+        htmlContent: result.confirmationHtml,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Bestätigungs-Mail an den Kunden fehlgeschlagen:', err);
+      confirmationError = `Bestätigung an Kunde fehlgeschlagen: ${String(err.message || err)}`;
+    }
+  }
+
+  await recordEmailStatus('verschickt', confirmationError);
   return json({ ok: true });
 }
 

@@ -18,17 +18,21 @@ export const PREFILL_RETENTION_DAYS = 90;
 const nowIso = () => new Date().toISOString();
 const cutoffIso = (days = RETENTION_DAYS) => new Date(Date.now() - days * 86400000).toISOString();
 
-// Sorgt dafür, dass Bestands-Datenbanken die Spalte `deleted_at` (Papierkorb)
-// bekommen, ohne dass jemand von Hand ein Migrations-Skript ausführen muss.
-// SQLite kennt kein „ADD COLUMN IF NOT EXISTS", daher fangen wir den Fehler ab.
+// Sorgt dafür, dass Bestands-Datenbanken nachträglich ergänzte Spalten
+// (Papierkorb, Mail-Status) bekommen, ohne dass jemand von Hand ein
+// Migrations-Skript ausführen muss. SQLite kennt kein „ADD COLUMN IF NOT
+// EXISTS", daher fangen wir den Fehler je Spalte ab.
 // Wird pro Worker-Instanz nur einmal versucht.
 let schemaReady = false;
 async function ensureSchema(db) {
   if (schemaReady) return;
-  try {
-    await db.prepare('ALTER TABLE entries ADD COLUMN deleted_at TEXT').run();
-  } catch {
-    /* Spalte existiert bereits – ignorieren */
+  const columns = ['deleted_at TEXT', 'email_status TEXT', 'email_error TEXT'];
+  for (const col of columns) {
+    try {
+      await db.prepare(`ALTER TABLE entries ADD COLUMN ${col}`).run();
+    } catch {
+      /* Spalte existiert bereits – ignorieren */
+    }
   }
   schemaReady = true;
 }
@@ -68,6 +72,19 @@ function summarize(type, data) {
 /** Abgelaufene Einträge entfernen (Aufbewahrungsfrist). */
 export async function purgeExpired(db) {
   await db.prepare('DELETE FROM entries WHERE updated_at < ?').bind(cutoffIso()).run();
+}
+
+/**
+ * Mail-Status einer Einreichung festhalten, damit ein fehlgeschlagener
+ * Versand im Admin sichtbar ist (statt still verloren zu gehen).
+ * status: 'verschickt' | 'fehlgeschlagen' | 'kein_api_key'
+ */
+export async function setEmailStatus(db, id, status, error = '') {
+  await ensureSchema(db);
+  await db
+    .prepare('UPDATE entries SET email_status = ?, email_error = ? WHERE id = ?')
+    .bind(status, error || null, id)
+    .run();
 }
 
 /** In den Papierkorb legen (deleted=true) oder wiederherstellen (deleted=false). */
@@ -153,7 +170,7 @@ export async function listEntries(db, { trashed = false } = {}) {
   const order = trashed ? 'deleted_at' : 'updated_at';
   const res = await db
     .prepare(
-      `SELECT id, type, status, company, contact_name, contact_email, system_count, created_at, updated_at, submitted_at, deleted_at
+      `SELECT id, type, status, company, contact_name, contact_email, system_count, created_at, updated_at, submitted_at, deleted_at, email_status
        FROM entries WHERE ${where} ORDER BY ${order} DESC LIMIT 500`,
     )
     .all();

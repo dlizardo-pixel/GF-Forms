@@ -20,13 +20,17 @@ CREATE TABLE IF NOT EXISTS entries (
   created_at    TEXT NOT NULL,            -- ISO-Zeitstempel
   updated_at    TEXT NOT NULL,
   submitted_at  TEXT,
-  deleted_at    TEXT                      -- gesetzt = im Papierkorb (soft delete)
+  deleted_at    TEXT,                     -- gesetzt = im Papierkorb (soft delete)
+  email_status  TEXT,                     -- 'verschickt' | 'fehlgeschlagen' | 'kein_api_key'
+  email_error   TEXT                      -- Fehlertext des Mail-Versands (falls vorhanden)
 );
 
--- Bestehende Datenbanken: fügt die Papierkorb-Spalte nachträglich hinzu.
--- Fehlermeldung „duplicate column name: deleted_at" bedeutet, dass sie schon
+-- Bestehende Datenbanken: fügt neuere Spalten nachträglich hinzu.
+-- Fehlermeldung „duplicate column name: …" bedeutet, dass sie schon
 -- existiert – dann einfach ignorieren. (Der Code migriert zusätzlich selbst.)
 -- ALTER TABLE entries ADD COLUMN deleted_at TEXT;
+-- ALTER TABLE entries ADD COLUMN email_status TEXT;
+-- ALTER TABLE entries ADD COLUMN email_error TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries (updated_at);
 CREATE INDEX IF NOT EXISTS idx_entries_status ON entries (status);

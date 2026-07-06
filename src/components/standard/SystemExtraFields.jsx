@@ -10,7 +10,7 @@ import { ENERGY_UNITS, unitKeyForHeatingTypes } from '../../../shared/conversion
  * weil sie nicht in die Einsparungsrechnung eingehen: Leistung, Modell/Infos,
  * Baujahr, „macht Warmwasser?", Abrechnungsturnus, zweites Vorjahr.
  */
-export default function SystemExtraFields({ system, onChange }) {
+export default function SystemExtraFields({ system, onChange, hideResidentialUnits = false }) {
   const set = (key) => (val) => onChange({ [key]: val });
   const unit = ENERGY_UNITS[unitKeyForHeatingTypes(system.heatingTypes)].unit;
   const isFernwaerme = Array.isArray(system.heatingTypes) && system.heatingTypes.includes('Fernwärme');
@@ -33,12 +33,15 @@ export default function SystemExtraFields({ system, onChange }) {
         />
       )}
 
-      <NumberField
-        label="Wie viele Wohnungen hängen dran?"
-        value={system.residentialUnits}
-        onChange={set('residentialUnits')}
-        help="Grobe Zahl reicht."
-      />
+      {/* Im Tabellenmodus eine Hauptspalte → dort ausgeblendet (keine Dublette). */}
+      {!hideResidentialUnits && (
+        <NumberField
+          label="Wie viele Wohnungen hängen dran?"
+          value={system.residentialUnits}
+          onChange={set('residentialUnits')}
+          help="Grobe Zahl reicht."
+        />
+      )}
 
       {/* Selten – nur bei Fernwärme (geht in die Preisstufe ein). */}
       {isFernwaerme && (

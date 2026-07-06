@@ -9,7 +9,7 @@ import HeatingTypeDropdown from './HeatingTypeDropdown.jsx';
 import ImportModal from './ImportModal.jsx';
 
 // Anzahl der Kernspalten (für colSpan der Detailzeile).
-const COL_COUNT = 8;
+const COL_COUNT = 9;
 
 /**
  * Tabellen-/Rastermodus – HAUPTMODUS für die Anlagen.
@@ -96,6 +96,7 @@ export default function SystemGrid({ systems, setSystems, project }) {
               <th>PLZ</th>
               <th>Stadt</th>
               <th>Heizung</th>
+              <th>Wohneinheiten</th>
               <th>Fläche m²</th>
               <th>Verbrauch letztes Jahr</th>
               <th></th>
@@ -143,6 +144,15 @@ export default function SystemGrid({ systems, setSystems, project }) {
                     <td>
                       {/* Kompakte Mehrfachauswahl direkt in der Zelle */}
                       <HeatingTypeDropdown system={s} onChange={(partial) => updateSystem(i, partial)} />
+                    </td>
+                    <td>
+                      <input
+                        className="gf-col-num"
+                        type="number"
+                        value={s.residentialUnits}
+                        onChange={(e) => updateSystem(i, { residentialUnits: e.target.value })}
+                        title="Wie viele Wohnungen hängen dran? Grobe Zahl reicht."
+                      />
                     </td>
                     <td>
                       <input
@@ -204,7 +214,7 @@ export default function SystemGrid({ systems, setSystems, project }) {
                             {h}
                           </Hint>
                         ))}
-                        <SystemExtraFields system={s} onChange={(partial) => updateSystem(i, partial)} />
+                        <SystemExtraFields system={s} onChange={(partial) => updateSystem(i, partial)} hideResidentialUnits />
                       </td>
                     </tr>
                   )}
