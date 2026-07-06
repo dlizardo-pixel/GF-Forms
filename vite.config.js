@@ -59,7 +59,8 @@ function devApiPlugin() {
         const s = summarize(data.type, data);
         const now = new Date().toISOString();
         const prev = entries.get(id);
-        entries.set(id, { id, type: data.type, status: 'submitted', ...s, data, created_at: prev?.created_at || now, updated_at: now, submitted_at: now });
+        // email_status wie im echten Mock-Modus (kein API-Key) → roter Badge im Admin sichtbar/testbar.
+        entries.set(id, { id, type: data.type, status: 'submitted', ...s, data, created_at: prev?.created_at || now, updated_at: now, submitted_at: now, email_status: 'kein_api_key', email_error: 'Dev-Modus: es wird keine echte E-Mail verschickt.' });
         // eslint-disable-next-line no-console
         console.log('[DEV] Absenden gespeichert (submitted):', id, '–', result.csvFilename);
         sendJson(res, 200, { ok: true, mock: true });

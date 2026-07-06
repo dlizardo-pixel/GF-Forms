@@ -550,7 +550,7 @@ table.gf-grid {
    Spalte 2 „Straße" bekommt den verbleibenden Platz. */
 table.gf-grid-systems {
   table-layout: fixed;
-  min-width: 720px;
+  min-width: 820px;
 }
 table.gf-grid-systems th:nth-child(1),
 table.gf-grid-systems td:nth-child(1) {
@@ -568,16 +568,21 @@ table.gf-grid-systems th:nth-child(5),
 table.gf-grid-systems td:nth-child(5) {
   width: 150px;
 }
+/* Wohneinheiten */
 table.gf-grid-systems th:nth-child(6),
 table.gf-grid-systems td:nth-child(6) {
-  width: 92px;
+  width: 110px;
 }
 table.gf-grid-systems th:nth-child(7),
 table.gf-grid-systems td:nth-child(7) {
-  width: 140px;
+  width: 92px;
 }
 table.gf-grid-systems th:nth-child(8),
 table.gf-grid-systems td:nth-child(8) {
+  width: 140px;
+}
+table.gf-grid-systems th:nth-child(9),
+table.gf-grid-systems td:nth-child(9) {
   width: 104px;
 }
 table.gf-grid th,

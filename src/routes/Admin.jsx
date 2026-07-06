@@ -267,6 +267,27 @@ export default function Admin() {
                     >
                       {e.status === 'submitted' ? 'Eingereicht' : 'Entwurf'}
                     </span>
+                    {e.status === 'submitted' && e.email_status && e.email_status !== 'verschickt' && (
+                      <span
+                        title={
+                          e.email_status === 'kein_api_key'
+                            ? 'Kein Brevo-API-Schlüssel in dieser Umgebung – es wurde keine E-Mail verschickt.'
+                            : 'Der E-Mail-Versand ist fehlgeschlagen – Details im Eintrag.'
+                        }
+                        style={{
+                          display: 'inline-block',
+                          marginLeft: 6,
+                          padding: '1px 6px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: 'var(--gf-error-dark)',
+                          background: 'var(--gf-error-bg)',
+                        }}
+                      >
+                        ⚠ Mail nicht verschickt
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '6px 8px' }}>{e.type === 'standard' ? 'Standard' : 'Sektorkopplung'}</td>
                   <td style={{ padding: '6px 8px' }}>{e.company || '—'}</td>
@@ -333,6 +354,20 @@ export default function Admin() {
             <p className="gf-help">
               {detail.type} · {detail.status} · erstellt {fmt(detail.created_at)}
             </p>
+            {detail.status === 'submitted' && detail.email_status && detail.email_status !== 'verschickt' && (
+              <Hint kind="error">
+                <strong>Die Benachrichtigungs-Mail wurde nicht verschickt</strong>
+                {detail.email_status === 'kein_api_key'
+                  ? ' — in dieser Umgebung ist kein Brevo-API-Schlüssel (BREVO_API_KEY) gesetzt.'
+                  : detail.email_error
+                    ? ` — Fehler: ${detail.email_error}`
+                    : '.'}
+                {' '}Bitte die CSV hier herunterladen und manuell weiterleiten.
+              </Hint>
+            )}
+            {detail.status === 'submitted' && detail.email_status === 'verschickt' && detail.email_error && (
+              <Hint kind="soft">Hinweis: {detail.email_error}</Hint>
+            )}
             <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
               <button className="gf-btn gf-btn-primary" onClick={() => downloadCsv(detail.id)}>CSV herunterladen</button>
               <button className="gf-btn gf-btn-ghost" disabled={linkBusy === detail.id} onClick={() => makeFormLink(detail.id, detail.type)}>

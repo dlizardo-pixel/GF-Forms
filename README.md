@@ -303,6 +303,25 @@ Voraussetzung: Wrangler ist installiert (ist als Abhängigkeit dabei → `npx wr
 > Cloud gespeichert (kein Fehler). Bei reinem `npm run dev` simuliert ein
 > In-Memory-Speicher die Cloud, und `/admin` akzeptiert jedes Passwort (nur lokal).
 
+<<<<<<< HEAD
+### Keine E-Mail erhalten, obwohl eingereicht wurde?
+
+Jede Einreichung zeigt in `/admin` ihren **Mail-Status**: Ist etwas schiefgelaufen,
+steht am Eintrag ein roter Hinweis **„⚠ Mail nicht verschickt"** (Details im
+Eintrag; die CSV lässt sich dort herunterladen und manuell weiterleiten).
+Checkliste zur Ursache:
+
+1. **Cloudflare** → Projekt → **Settings → Variables and secrets**, Umgebung
+   **Production**: Sind `BREVO_API_KEY`, `GF_RECIPIENT_EMAIL` und
+   `BREVO_SENDER_EMAIL` gesetzt? Fehlt der API-Key, läuft das Absenden im
+   „Mock-Modus" — Einreichung wird gespeichert, aber **keine** Mail verschickt.
+   (Häufigster Fehler: Variablen nur für „Preview" statt „Production" angelegt.)
+2. **Brevo** → **Transactional → Logs**: Wurde die Mail verschickt oder
+   abgelehnt (z. B. Absender nicht verifiziert)?
+3. **Spam-Ordner** des Empfänger-Postfachs prüfen.
+
+=======
+>>>>>>> origin/main
 ---
 
 ## 6c. Integrations-API (Formulare mit anderen Tools verbinden)
