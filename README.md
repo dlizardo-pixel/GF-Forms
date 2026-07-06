@@ -303,6 +303,7 @@ Voraussetzung: Wrangler ist installiert (ist als Abhängigkeit dabei → `npx wr
 > Cloud gespeichert (kein Fehler). Bei reinem `npm run dev` simuliert ein
 > In-Memory-Speicher die Cloud, und `/admin` akzeptiert jedes Passwort (nur lokal).
 
+<<<<<<< HEAD
 ### Keine E-Mail erhalten, obwohl eingereicht wurde?
 
 Jede Einreichung zeigt in `/admin` ihren **Mail-Status**: Ist etwas schiefgelaufen,
@@ -319,6 +320,8 @@ Checkliste zur Ursache:
    abgelehnt (z. B. Absender nicht verifiziert)?
 3. **Spam-Ordner** des Empfänger-Postfachs prüfen.
 
+=======
+>>>>>>> origin/main
 ---
 
 ## 6c. Integrations-API (Formulare mit anderen Tools verbinden)
