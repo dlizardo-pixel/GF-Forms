@@ -140,10 +140,11 @@ export async function onRequestPost(context) {
       sender,
       to: [{ email: recipient }],
       replyTo: result.customerEmail ? { email: result.customerEmail, name: result.customerName || undefined } : undefined,
+      // 📮 im Betreff, damit die interne Benachrichtigung im Postfach auffällt.
       subject:
         result.type === 'standard'
-          ? 'Neue Anlagen-Erfassung (Standard Business Case)'
-          : 'Neue Anlagen-Erfassung (Sektorkopplung)',
+          ? '📮 Neue Anlagen-Erfassung (Standard Business Case)'
+          : '📮 Neue Anlagen-Erfassung (Sektorkopplung)',
       htmlContent: result.summaryHtml,
       attachment: [{ content: csvBase64, name: result.csvFilename }],
     });
