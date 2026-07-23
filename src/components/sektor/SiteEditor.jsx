@@ -44,8 +44,8 @@ function StatusToggle({ value, onChange }) {
 /**
  * Editor für EINE Sektorkopplungs-Anlage. Enthält neben Standort & Komponenten
  * die fachlich entscheidenden Fragen (Regler/Controller, Topologie, PV-Nutzung/
- * Betreiber, weitere Wärmeerzeuger) – diese trennen grün/gelb/rot bei der
- * Anbindbarkeit.
+ * Betreiber, weitere Wärmeerzeuger, anderes EMS/GLT) – diese trennen grün/gelb/rot
+ * bei der Anbindbarkeit.
  */
 export default function SiteEditor({ site, onChange, hideLocation = false }) {
   const set = (key) => (val) => onChange({ [key]: val });
@@ -102,7 +102,8 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
         <div className="gf-card" style={{ marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>Solaranlage (PV)</h3>
           <StatusToggle value={site.componentStatus.pv} onChange={setStatus('pv')} />
-          <AutocompleteField label="Hersteller & Modell des PV-Wechselrichters" value={site.components.pvInverterModel} onChange={setComp('pvInverterModel')} suggestions={PV_INVERTER_MANUFACTURERS} help="Der Wechselrichter — nicht der Solarteur." />
+          <AutocompleteField label="Hersteller des PV-Wechselrichters" value={site.components.pvInverterManufacturer} onChange={setComp('pvInverterManufacturer')} suggestions={PV_INVERTER_MANUFACTURERS} help="Der Wechselrichter — nicht der Solarteur." />
+          <TextField label="Modell / Serie des PV-Wechselrichters" value={site.components.pvInverterModel} onChange={setComp('pvInverterModel')} help="z. B. Sunny Tripower, Symo … — wichtig für die Anbindbarkeit." />
           <NumberField label="Größe gesamt" value={site.components.pvKwp} onChange={setComp('pvKwp')} suffix="kWp" />
           <ChoiceField
             label="Wie wird der Solarstrom in Ihrem Gebäude genutzt?"
@@ -166,6 +167,19 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
         options={OTHER_HEAT_SOURCES}
         help="Mehrfachauswahl. Leer lassen, wenn es nur die Wärmepumpe gibt."
       />
+
+      {/* ---- Anderes EMS / GLT ---- */}
+      <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Weiteres Energiemanagement</h3>
+      <ToggleField label="Gibt es bereits ein anderes Energiemanagement oder eine Gebäudeleittechnik (GLT)?" value={site.existingEms} onChange={set('existingEms')} />
+      {site.existingEms === true && (
+        <ChoiceField
+          label="Nutzt dieses System Modbus?"
+          value={site.existingEmsModbus}
+          onChange={set('existingEmsModbus')}
+          options={['Ja', 'Nein', 'weiß nicht']}
+          help="Eine vorhandene Fremd-Steuerung auf denselben Schnittstellen kann die Anbindung blockieren."
+        />
+      )}
 
       {/* ---- Einsparpotenziale (optional) ---- */}
       <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Berechnung der Einsparpotenziale (optional)</h3>

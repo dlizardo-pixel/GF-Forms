@@ -21,7 +21,8 @@ export function makeSite(prev = null) {
       heatPumpKw: '',
       heatPumpController: '', // Regler/Controller (entscheidet Anbindbarkeit, nicht der Installateur)
       heatPumpTopology: '',
-      pvInverterModel: '',
+      pvInverterManufacturer: '', // PV-Wechselrichter Hersteller (für Anbindbarkeits-Abgleich)
+      pvInverterModel: '', // PV-Wechselrichter Modell / Serie
       pvKwp: '',
       batteryInverterModel: '',
       batteryCount: '',
@@ -34,6 +35,9 @@ export function makeSite(prev = null) {
 
     wpIsMainHeater: undefined, // ist die WP der Haupt-Wärmeerzeuger?
     otherHeatSources: [], // weitere Wärmeerzeuger (Gas/Fernwärme/BHKW …)
+
+    existingEms: undefined, // anderes EMS/GLT vorhanden?
+    existingEmsModbus: '', // nutzt es Modbus?
 
     pvUsage: '', // Nutzung des PV-Stroms im Gebäude (siehe PV_USAGE)
     pvOperator: '', // selbst / Dritter / weiß nicht

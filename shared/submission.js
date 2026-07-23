@@ -187,10 +187,12 @@ export function buildSummaryHtml(data) {
       kv('Weitere Wärmeerzeuger', formatOtherHeatSources(site)),
       kv('Heizstab', compState('heizstab') && `${compState('heizstab')} · ${[c.heatingRodCount && `${c.heatingRodCount}×`, c.heatingRodKw && `${c.heatingRodKw} kW`].filter(Boolean).join(', ')}`),
       kv('Pufferspeicher', compState('pufferspeicher') && `${compState('pufferspeicher')} · ${[c.bufferCount && `${c.bufferCount}×`, c.bufferLiters && `${c.bufferLiters} l`].filter(Boolean).join(', ')}`),
-      kv('PV-Anlage', compState('pv') && `${compState('pv')} · ${[c.pvInverterModel, c.pvKwp && `${c.pvKwp} kWp`].filter(Boolean).join(', ')}`),
+      kv('PV-Anlage', compState('pv') && `${compState('pv')} · ${[c.pvInverterManufacturer, c.pvInverterModel, c.pvKwp && `${c.pvKwp} kWp`].filter(Boolean).join(', ')}`),
       kv('PV-Nutzung', sel.includes('pv') ? site.pvUsage : ''),
       kv('PV-Betreiber', sel.includes('pv') ? pvOperator : ''),
       kv('Batteriespeicher', compState('batterie') && `${compState('batterie')} · ${[c.batteryInverterModel, c.batteryCount && `${c.batteryCount}×`, c.batteryKwh && `${c.batteryKwh} kWh`].filter(Boolean).join(', ')}`),
+      kv('Anderes EMS / GLT', site.existingEms === true ? 'Ja' : site.existingEms === false ? 'Nein' : ''),
+      kv('EMS nutzt Modbus', site.existingEms === true ? site.existingEmsModbus : ''),
       kv('Zeithorizont (Planung)', site.planningHorizon),
       kv('Kommentar', site.comment),
     ]);
