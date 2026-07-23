@@ -65,9 +65,6 @@ export const PV_USAGE = [
 // Wer betreibt die PV-Anlage?
 export const PV_OPERATOR = ['Wir selbst', 'Ein Dritter (z. B. Einhundert, metergrid …)', 'weiß nicht'];
 
-// Haben wir Zugriff / die Erlaubnis auf die Anlage?
-export const SITE_ACCESS = ['Ja, Zugriff/Erlaubnis vorhanden', 'Teilweise', 'Nein / noch nicht geklärt'];
-
 // Zeithorizont bei „in Planung".
 export const PLANNING_HORIZON = ['In den nächsten 6 Monaten', 'In mehr als 6 Monaten', 'weiß nicht'];
 

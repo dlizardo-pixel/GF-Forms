@@ -67,6 +67,11 @@ export function validateSubmission(data) {
       if (!isFilled(s.streetHeating)) errors.push(`Anlage ${n}: Straße & Hausnummer der Heizungsanlage fehlt.`);
       if (!isFilled(s.plz)) errors.push(`Anlage ${n}: PLZ fehlt.`);
       if (!isFilled(s.city)) errors.push(`Anlage ${n}: Stadt fehlt.`);
+      // Regler/Controller ist für die Anbindbarkeit entscheidend → Pflicht,
+      // sobald eine Wärmepumpe erfasst ist.
+      if (Array.isArray(s.selectedComponents) && s.selectedComponents.includes('waermepumpe') && !isFilled(s.components && s.components.heatPumpController)) {
+        errors.push(`Anlage ${n}: Regler / Controller der Wärmepumpe fehlt.`);
+      }
     });
   } else {
     errors.push('Unbekannter Formulartyp.');
@@ -174,7 +179,7 @@ export function buildSummaryHtml(data) {
       kv('Einsparberechnung gewünscht', site.calcSavings === true ? 'Ja' : site.calcSavings === false ? 'Nein' : ''),
       kv('Jährl. Wärmebedarf', site.calcSavings === true && isFilled(site.annualHeatDemandKwh) ? `${site.annualHeatDemandKwh} kWh` : ''),
       kv('Mieterstromteilnehmer', site.calcSavings === true ? site.tenantPowerParticipants : ''),
-      kv('Strompreis', site.calcSavings === true && isFilled(site.electricityPriceEurKwh) ? `${site.electricityPriceEurKwh} €/kWh` : ''),
+      kv('Strompreis Wärmepumpe / Reststrom', site.calcSavings === true && isFilled(site.electricityPriceEurKwh) ? `${site.electricityPriceEurKwh} €/kWh` : ''),
       kv('Wärmepumpe', compState('waermepumpe') && `${compState('waermepumpe')} · ${[c.heatPumpModel, c.heatPumpCount && `${c.heatPumpCount}×`, c.heatPumpKw && `${c.heatPumpKw} kW`].filter(Boolean).join(', ')}`),
       kv('WP-Regler / Controller', sel.includes('waermepumpe') ? c.heatPumpController : ''),
       kv('WP-Topologie', sel.includes('waermepumpe') ? c.heatPumpTopology : ''),
@@ -182,15 +187,11 @@ export function buildSummaryHtml(data) {
       kv('Weitere Wärmeerzeuger', formatOtherHeatSources(site)),
       kv('Heizstab', compState('heizstab') && `${compState('heizstab')} · ${[c.heatingRodCount && `${c.heatingRodCount}×`, c.heatingRodKw && `${c.heatingRodKw} kW`].filter(Boolean).join(', ')}`),
       kv('Pufferspeicher', compState('pufferspeicher') && `${compState('pufferspeicher')} · ${[c.bufferCount && `${c.bufferCount}×`, c.bufferLiters && `${c.bufferLiters} l`].filter(Boolean).join(', ')}`),
-      kv('PV-Anlage', compState('pv') && `${compState('pv')} · ${[c.pvInverterModel, c.pvCount && `${c.pvCount}×`, c.pvKwp && `${c.pvKwp} kWp`].filter(Boolean).join(', ')}`),
+      kv('PV-Anlage', compState('pv') && `${compState('pv')} · ${[c.pvInverterModel, c.pvKwp && `${c.pvKwp} kWp`].filter(Boolean).join(', ')}`),
       kv('PV-Nutzung', sel.includes('pv') ? site.pvUsage : ''),
       kv('PV-Betreiber', sel.includes('pv') ? pvOperator : ''),
       kv('Batteriespeicher', compState('batterie') && `${compState('batterie')} · ${[c.batteryInverterModel, c.batteryCount && `${c.batteryCount}×`, c.batteryKwh && `${c.batteryKwh} kWh`].filter(Boolean).join(', ')}`),
-      kv('Anderes EMS / GLT', site.existingEms === true ? 'Ja' : site.existingEms === false ? 'Nein' : ''),
-      kv('EMS nutzt Modbus', site.existingEms === true ? site.existingEmsModbus : ''),
-      kv('Zugriff auf Anlage', site.siteAccess),
       kv('Zeithorizont (Planung)', site.planningHorizon),
-      kv('Installateur (Nebeninfo)', site.installer),
       kv('Kommentar', site.comment),
     ]);
   });
