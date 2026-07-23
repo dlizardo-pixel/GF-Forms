@@ -13,6 +13,33 @@ Google-Sheets-Spaltennamen, damit die vorhandenen Node-Ausdrücke
 
 ---
 
+## Schnellweg: fertigen Flow importieren
+
+Statt den bestehenden Flow von Hand umzubauen, kannst du die mitgelieferte Datei
+**`n8n/GF-Forms-to-SC-Project-List.json`** direkt importieren
+(n8n → **Workflows → Import from File**). Darin sind bereits enthalten:
+
+- **Webhook-Node** (POST, Pfad `gf-forms`) als Trigger statt Google Sheets,
+- eine **„Normalize"**-Node, die den Webhook-Body flach macht (damit alle
+  `$json['…']`-Ausdrücke unverändert laufen),
+- die 3 Trigger-Referenzen bereits auf `$('Normalize')` umgestellt.
+
+**Nach dem Import noch eintragen** (aus Sicherheitsgründen als Platzhalter drin):
+
+1. In **„Update a database page"** und **„Ampel Controller setzen"** den Header
+   `Authorization: Bearer <DEIN_NOTION_INTERNAL_TOKEN>` durch deinen (am besten
+   frisch rotierten) Notion-Token ersetzen.
+2. In **„Slack Notification"** die URL `<DEINE_SLACK_WEBHOOK_URL>` durch deine
+   Slack-Webhook-URL ersetzen.
+3. Bei den Notion-Nodes ggf. die **Credentials** neu zuweisen (falls die
+   Credential-IDs in deiner Instanz anders heißen).
+4. Die **Webhook-Production-URL** kopieren → als `N8N_WEBHOOK_URL` in Cloudflare
+   hinterlegen (Abschnitt 3), dann den Workflow **aktivieren**.
+
+Wer den bestehenden Flow lieber selbst anpasst, folgt den Schritten 1–2 unten.
+
+---
+
 ## 1. In n8n: Webhook-Node anlegen
 
 1. Den Flow „TF Survey to SC Project List" öffnen.
