@@ -71,6 +71,7 @@ die Spaltenüberschriften im Sheet.
 
 | Spalte / JSON-Schlüssel | Herkunft in GF-Forms |
 | --- | --- |
+| `Zeitstempel` | Absende-Zeitpunkt (Europe/Berlin, z. B. `23.07.2026 14:30`) |
 | `Adressen aller Gebäude mit gleichen Eigenschaften` | Straße + PLZ + Stadt der Anlage |
 | `Ihr Unternehmen` | Unternehmen (Ansprechpartner) |
 | `Ihr Ansprechpartner bei Green Fusion` | Default `Daniel Lizardo` (`GF_DEFAULT_CONTACT`) |

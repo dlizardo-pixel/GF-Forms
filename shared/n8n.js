@@ -32,6 +32,20 @@ function addressLine(site) {
   return [site.streetHeating, cityLine].filter(Boolean).join(', ');
 }
 
+/** Deutscher Zeitstempel in Europe/Berlin, z. B. "23.07.2026 14:30". */
+function nowStamp() {
+  const parts = new Intl.DateTimeFormat('de-DE', {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(new Date());
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+  return `${p.day}.${p.month}.${p.year} ${p.hour}:${p.minute}`;
+}
+
 /**
  * Liefert ein Array flacher Objekte (eines je Anlage) für den n8n-Webhook.
  * Für andere Formulartypen (Standard) leeres Array – der SK-Flow ist speziell.
@@ -54,6 +68,7 @@ export function buildN8nPayloads(data, { gfContact = DEFAULT_GF_CONTACT } = {}) 
           : '';
 
     return {
+      Zeitstempel: nowStamp(),
       'Adressen aller Gebäude mit gleichen Eigenschaften': addressLine(site),
       'Ihr Unternehmen': contact.company || '',
       'Ihr Ansprechpartner bei Green Fusion': gfContact,
