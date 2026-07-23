@@ -27,9 +27,38 @@
  */
 
 import { buildSubmission } from '../../shared/submission.js';
+import { buildN8nPayloads, DEFAULT_GF_CONTACT } from '../../shared/n8n.js';
 import { markSubmitted, setEmailStatus } from '../_lib/store.js';
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
+
+/**
+ * Reicht eine Sektorkopplungs-Einreichung an den n8n-Flow weiter (ein POST je
+ * Anlage). „Best effort": Fehler oder eine nicht gesetzte URL stören weder die
+ * Speicherung noch den Mailversand. Läuft unabhängig von Brevo (auch im
+ * Mock-Modus), da die Weitergabe an n8n nichts mit dem Mailversand zu tun hat.
+ */
+async function forwardToN8n(env, data) {
+  const url = env.N8N_WEBHOOK_URL;
+  if (!url) return; // Feature deaktiviert, solange kein Webhook konfiguriert ist.
+
+  const payloads = buildN8nPayloads(data, {
+    gfContact: env.GF_DEFAULT_CONTACT || DEFAULT_GF_CONTACT,
+  });
+  if (!payloads.length) return;
+
+  await Promise.allSettled(
+    payloads.map((payload) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then((res) => {
+        if (!res.ok) throw new Error(`n8n-Webhook HTTP ${res.status}`);
+      }),
+    ),
+  );
+}
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -91,6 +120,14 @@ export async function onRequestPost(context) {
       // eslint-disable-next-line no-console
       console.error('D1-Speicherung der Einreichung fehlgeschlagen:', err);
     }
+  }
+
+  // Einreichung an n8n weiterreichen (best effort – blockiert nichts).
+  try {
+    await forwardToN8n(env, data);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Weitergabe an n8n fehlgeschlagen:', err);
   }
 
   // Mail-Status am Eintrag vermerken, damit ein Versand-Problem im Admin

@@ -21,8 +21,8 @@ export function makeSite(prev = null) {
       heatPumpKw: '',
       heatPumpController: '', // Regler/Controller (entscheidet Anbindbarkeit, nicht der Installateur)
       heatPumpTopology: '',
-      pvInverterModel: '',
-      pvCount: '',
+      pvInverterManufacturer: '', // PV-Wechselrichter Hersteller (für Anbindbarkeits-Abgleich)
+      pvInverterModel: '', // PV-Wechselrichter Modell / Serie
       pvKwp: '',
       batteryInverterModel: '',
       batteryCount: '',
@@ -42,7 +42,6 @@ export function makeSite(prev = null) {
     pvUsage: '', // Nutzung des PV-Stroms im Gebäude (siehe PV_USAGE)
     pvOperator: '', // selbst / Dritter / weiß nicht
     pvOperatorName: '', // falls Dritter
-    siteAccess: '', // Zugriff/Erlaubnis auf die Anlage?
 
     // Optionale Angaben für die Einsparpotenzial-Berechnung. Wohneinheiten und
     // Batteriespeicher werden aus den bereits erfassten Feldern (residentialUnits,
@@ -52,7 +51,6 @@ export function makeSite(prev = null) {
     tenantPowerParticipants: '', // Anzahl Mieterstromteilnehmer
     electricityPriceEurKwh: '', // Strompreis in €/kWh
 
-    installer: '', // optionale Nebeninfo (falls Gerätezugang über den Installateur nötig)
     comment: '',
   };
 
