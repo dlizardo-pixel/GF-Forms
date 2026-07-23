@@ -49,8 +49,18 @@ export const WP_TOPOLOGY = [
   'weiß nicht',
 ];
 
-// PV-Strom: Eigenverbrauch vs. Volleinspeisung (Volleinspeisung = kein Strom für WP).
-export const PV_USAGE = ['Eigenverbrauch', 'Volleinspeisung', 'weiß nicht'];
+// PV-Strom: wie wird der erzeugte Solarstrom im Gebäude genutzt?
+// (Volleinspeisung = kein Strom für die Wärmepumpe verfügbar.)
+export const PV_USAGE = [
+  'Volleinspeisung',
+  'Allgemeinstrom',
+  'Allgemeinstrom + Wärmepumpe',
+  'Mieterstrom (durch Sie)',
+  'Mieterstrom (durch Anbieter)',
+  'Gemeinschaftliche Gebäudeversorgung',
+  'Ist noch nicht entschieden',
+  'Wir sind offen für Beratung zu diesem Thema',
+];
 
 // Wer betreibt die PV-Anlage?
 export const PV_OPERATOR = ['Wir selbst', 'Ein Dritter (z. B. Einhundert, metergrid …)', 'weiß nicht'];

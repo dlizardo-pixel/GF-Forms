@@ -39,10 +39,18 @@ export function makeSite(prev = null) {
     existingEms: undefined, // anderes EMS/GLT vorhanden?
     existingEmsModbus: '', // nutzt es Modbus?
 
-    pvUsage: '', // Eigenverbrauch / Volleinspeisung / weiß nicht
+    pvUsage: '', // Nutzung des PV-Stroms im Gebäude (siehe PV_USAGE)
     pvOperator: '', // selbst / Dritter / weiß nicht
     pvOperatorName: '', // falls Dritter
     siteAccess: '', // Zugriff/Erlaubnis auf die Anlage?
+
+    // Optionale Angaben für die Einsparpotenzial-Berechnung. Wohneinheiten und
+    // Batteriespeicher werden aus den bereits erfassten Feldern (residentialUnits,
+    // batteryCount/batteryKwh) übernommen – hier nur die zusätzlichen Werte.
+    calcSavings: undefined, // Einsparpotenziale berechnen? (Ja/Nein)
+    annualHeatDemandKwh: '', // jährlicher Wärmebedarf des Gebäudes in kWh
+    tenantPowerParticipants: '', // Anzahl Mieterstromteilnehmer
+    electricityPriceEurKwh: '', // Strompreis in €/kWh
 
     installer: '', // optionale Nebeninfo (falls Gerätezugang über den Installateur nötig)
     comment: '',
