@@ -14,14 +14,20 @@ export function TopBar() {
   );
 }
 
-/** Fortschrittsanzeige (0–100 %) mit Beschriftung. */
+/** Fortschrittsanzeige (0–100 %) mit Beschriftung und Prozentwert. */
 export function Progress({ percent, label }) {
+  const pct = Math.round(Math.max(0, Math.min(100, percent)));
   return (
     <div className="gf-progress">
       <div className="gf-progress-track">
-        <div className="gf-progress-bar" style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+        <div className="gf-progress-bar" style={{ width: `${pct}%` }} />
       </div>
-      {label && <div className="gf-progress-label">{label}</div>}
+      {label && (
+        <div className="gf-progress-label">
+          <span>{label}</span>
+          <span className="gf-progress-pct">{pct}%</span>
+        </div>
+      )}
     </div>
   );
 }

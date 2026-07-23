@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { TopBar, Progress, Step } from '../components/Layout.jsx';
-import { TextField, Hint } from '../components/Fields.jsx';
+import { TextField, NumberField, Hint } from '../components/Fields.jsx';
 import SiteEditor from '../components/sektor/SiteEditor.jsx';
+import SektorGrid from '../components/sektor/SektorGrid.jsx';
 import { makeSite, isSiteComplete } from '../lib/sektorModel.js';
 import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
 import { scheduleCloudSave, getCloudId, clearCloudId } from '../lib/draftSync.js';
-import { GF_CONTACT_EMAIL } from '../lib/config.js';
+import { GF_CONTACT_EMAIL, SEKTOR_GUIDED_MAX } from '../lib/config.js';
 import MailListToast from '../components/MailListToast.jsx';
 
 // v2: anderes Datenmodell (Ansprechpartner + mehrere Anlagen) → alter Entwurf wird ignoriert.
@@ -44,6 +45,7 @@ export default function SektorkopplungForm() {
   const [phase, setPhase] = useState(draft?.phase ?? 'contact'); // 'contact' | 'sites' | 'submit'
   const [contact, setContact] = useState(draft?.contact ?? defaultContact);
   const [sites, setSites] = useState(draft?.sites ?? [makeSite()]);
+  const [siteCount, setSiteCount] = useState(draft?.siteCount ?? '1'); // vorab abgefragte Anzahl Anlagen
   const [current, setCurrent] = useState(draft?.current ?? 0);
   const [restored, setRestored] = useState(!!draft);
   const [consent, setConsent] = useState(false);
@@ -70,6 +72,7 @@ export default function SektorkopplungForm() {
           });
           if (Array.isArray(pl.sites) && pl.sites.length) {
             setSites(pl.sites.map((s) => ({ ...makeSite(), ...s })));
+            setSiteCount(String(pl.sites.length));
           }
           if (c.contactEmail) setPhase('sites');
         }
@@ -85,33 +88,38 @@ export default function SektorkopplungForm() {
   }, [shortId]);
 
   useEffect(() => {
-    saveDraft(DRAFT_KEY, { phase, contact, sites, current });
+    saveDraft(DRAFT_KEY, { phase, contact, sites, siteCount, current });
     const hasContent =
       !!(contact.company || contact.contactName || contact.contactEmail) || sites.some((s) => s.streetHeating || s.plz);
     scheduleCloudSave(DRAFT_KEY, 'sektorkopplung', { contact, sites }, hasContent);
-  }, [phase, contact, sites, current]);
+  }, [phase, contact, sites, siteCount, current]);
+
+  // Anzahl Anlagen und Darstellung (geführt vs. Tabelle) aus der Vorab-Angabe ableiten.
+  const count = Math.max(1, Math.min(parseInt(siteCount, 10) || 1, 1000));
+  const mode = count > SEKTOR_GUIDED_MAX ? 'grid' : 'guided';
 
   const setContactField = (key) => (val) => setContact((c) => ({ ...c, [key]: val }));
   const updateSite = (index, partial) => setSites((arr) => arr.map((s, i) => (i === index ? { ...s, ...partial } : s)));
-  const addSite = (fromPrev) =>
-    setSites((arr) => {
-      const next = [...arr, makeSite(fromPrev ? arr[arr.length - 1] : null)];
-      return next;
-    });
-  const removeSite = (index) =>
-    setSites((arr) => {
-      const next = arr.filter((_, i) => i !== index);
-      return next.length ? next : [makeSite()];
-    });
+  // „Werte von letzter Anlage übernehmen" (ohne Adresse) im geführten Modus.
+  const copyFromPrevious = (index) =>
+    setSites((arr) => arr.map((s, i) => (i === index ? makeSite(arr[index - 1]) : s)));
 
   function startSites() {
     const errs = [];
     if (!contact.contactEmail.trim()) errs.push('Wir brauchen Ihre E-Mail, um Ihnen die Bestätigung zu schicken.');
+    if (!siteCount || parseInt(siteCount, 10) < 1) errs.push('Wie viele Anlagen möchten Sie erfassen?');
     if (errs.length) {
       setErrors(errs);
       return;
     }
     setErrors([]);
+    // Anlagen-Liste auf die gewählte Anzahl bringen (vorhandene behalten).
+    setSites((arr) => {
+      const out = [];
+      for (let i = 0; i < count; i++) out.push(arr[i] || makeSite());
+      return out;
+    });
+    setCurrent(0);
     setPhase('sites');
   }
 
@@ -120,6 +128,7 @@ export default function SektorkopplungForm() {
     clearCloudId(DRAFT_KEY);
     setContact(defaultContact);
     setSites([makeSite()]);
+    setSiteCount('1');
     setCurrent(0);
     setConsent(false);
     setPhase('contact');
@@ -149,6 +158,8 @@ export default function SektorkopplungForm() {
   }
 
   const completedCount = sites.filter(isSiteComplete).length;
+  // Im Tabellenmodus können Zeilen hinzukommen – dann zählt die tatsächliche Zeilenzahl.
+  const totalCount = mode === 'grid' ? sites.length || count : count;
   const mailtoHref =
     `mailto:${GF_CONTACT_EMAIL}` +
     `?subject=${encodeURIComponent('Anlagenliste – ' + (contact.company || 'Ihr Unternehmen'))}` +
@@ -169,12 +180,25 @@ export default function SektorkopplungForm() {
     );
   }
 
+  const wideShell = phase === 'sites' && mode === 'grid';
+
   return (
     <div className="gf-page">
       <TopBar />
-      <div className="gf-shell">
+      <div className={'gf-shell' + (wideShell ? ' gf-shell-wide' : '')}>
         {phase === 'contact' && <Progress percent={5} label="Schritt 1: Ihre Kontaktdaten" />}
-        {phase === 'sites' && <Progress percent={10 + (current / sites.length) * 80} label={`Anlage ${current + 1} von ${sites.length}`} />}
+        {phase === 'sites' && mode === 'guided' && (
+          <Progress
+            percent={10 + (current / count) * 80}
+            label={count > 1 ? `Anlage ${current + 1} von ${count}` : 'Ihre Anlage'}
+          />
+        )}
+        {phase === 'sites' && mode === 'grid' && (
+          <Progress
+            percent={10 + (completedCount / Math.max(1, totalCount)) * 80}
+            label={`${completedCount} von ${totalCount} Anlagen vollständig`}
+          />
+        )}
         {phase === 'submit' && <Progress percent={95} label="Letzter Schritt: Absenden" />}
 
         {both && (
@@ -200,8 +224,7 @@ export default function SektorkopplungForm() {
               <span className="gf-eyebrow">Wärmepumpe und/oder Solar</span>
               <h1 className="gf-step-title">Erst kurz zu Ihnen</h1>
               <p className="gf-step-sub">
-                Diese Angaben gelten für alle Anlagen. Danach erfassen wir Ihre Anlagen — eine nach der anderen.
-                Schätzen ist okay.
+                Diese Angaben gelten für alle Anlagen. Danach erfassen wir Ihre Anlagen. Schätzen ist okay.
               </p>
               <p className="gf-help">
                 Ihre Eingaben werden automatisch und sicher (EU) zwischengespeichert, damit nichts verloren geht —
@@ -212,6 +235,14 @@ export default function SektorkopplungForm() {
               <TextField label="Unternehmensname" value={contact.company} onChange={setContactField('company')} />
               <TextField label="Ihre E-Mail" value={contact.contactEmail} onChange={setContactField('contactEmail')} type="email" required help="Hierhin schicken wir die Bestätigung — kein Newsletter." />
               <TextField label="Ihre Telefonnummer" value={contact.contactPhone} onChange={setContactField('contactPhone')} help="Für kurze Rückfragen. Optional." />
+              <NumberField
+                label="Wie viele Anlagen möchten Sie erfassen?"
+                value={siteCount}
+                onChange={setSiteCount}
+                required
+                min={1}
+                help={`Bis ${SEKTOR_GUIDED_MAX} gehen wir gemeinsam Anlage für Anlage durch, ab ${SEKTOR_GUIDED_MAX + 1} bekommen Sie eine Tabelle wie in Excel.`}
+              />
 
               {errors.length > 0 && <ErrorBox errors={errors} />}
 
@@ -222,24 +253,22 @@ export default function SektorkopplungForm() {
             </Step>
           )}
 
-          {/* ===== Schritt 2: Anlagen (eine nach der anderen) ===== */}
-          {phase === 'sites' && sites[current] && (
+          {/* ===== Schritt 2a: Anlagen geführt (1–2 Anlagen) ===== */}
+          {phase === 'sites' && mode === 'guided' && sites[current] && (
             <Step stepKey={`site-${current}`}>
-              <span className="gf-eyebrow">Anlage {current + 1} von {sites.length}</span>
+              <span className="gf-eyebrow">{count > 1 ? `Anlage ${current + 1} von ${count}` : 'Ihre Anlage'}</span>
               <h1 className="gf-step-title" style={{ marginBottom: 16 }}>Erzählen Sie uns von dieser Anlage</h1>
 
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                {current > 0 && (
-                  <button type="button" className="gf-btn gf-btn-ghost" onClick={() => updateSite(current, makeSite(sites[current - 1]))}>
-                    ↧ Werte von letzter Anlage übernehmen
-                  </button>
-                )}
-                {sites.length > 1 && (
-                  <button type="button" className="gf-btn gf-btn-text" style={{ color: 'var(--gf-error)' }} onClick={() => { removeSite(current); setCurrent((c) => Math.max(0, c - 1)); }}>
-                    ✕ Diese Anlage entfernen
-                  </button>
-                )}
-              </div>
+              {current > 0 && (
+                <button
+                  type="button"
+                  className="gf-btn gf-btn-ghost"
+                  style={{ marginBottom: 16 }}
+                  onClick={() => copyFromPrevious(current)}
+                >
+                  ↧ Werte von letzter Anlage übernehmen
+                </button>
+              )}
 
               <SiteEditor site={sites[current]} onChange={(partial) => updateSite(current, partial)} />
 
@@ -247,16 +276,30 @@ export default function SektorkopplungForm() {
                 <button className="gf-btn gf-btn-ghost" onClick={() => (current === 0 ? setPhase('contact') : setCurrent((c) => c - 1))}>
                   ← Zurück
                 </button>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="gf-btn gf-btn-ghost" onClick={() => { addSite(false); setCurrent(sites.length); }}>
-                    + Weitere Anlage
-                  </button>
-                  {current < sites.length - 1 ? (
-                    <button className="gf-btn gf-btn-primary" onClick={() => setCurrent((c) => c + 1)}>Nächste Anlage →</button>
-                  ) : (
-                    <button className="gf-btn gf-btn-primary" onClick={() => setPhase('submit')}>Weiter zur Übersicht →</button>
-                  )}
-                </div>
+                {current < count - 1 ? (
+                  <button className="gf-btn gf-btn-primary" onClick={() => setCurrent((c) => c + 1)}>Nächste Anlage →</button>
+                ) : (
+                  <button className="gf-btn gf-btn-primary" onClick={() => setPhase('submit')}>Weiter zur Übersicht →</button>
+                )}
+              </div>
+            </Step>
+          )}
+
+          {/* ===== Schritt 2b: Anlagen als Tabelle (ab 3 Anlagen) ===== */}
+          {phase === 'sites' && mode === 'grid' && (
+            <Step stepKey="grid">
+              <span className="gf-eyebrow">Ihre Anlagen</span>
+              <h1 className="gf-step-title">Tragen Sie Ihre Anlagen ein</h1>
+              <p className="gf-step-sub">
+                Eine Zeile pro Anlage — wie in Ihrer Excel-Liste. Die fachlichen Details je Anlage öffnen Sie
+                über „Details". Schätzen ist überall okay.
+              </p>
+
+              <SektorGrid sites={sites} setSites={setSites} />
+
+              <div className="gf-actions">
+                <button className="gf-btn gf-btn-ghost" onClick={() => setPhase('contact')}>← Zurück</button>
+                <button className="gf-btn gf-btn-primary" onClick={() => setPhase('submit')}>Weiter zur Übersicht →</button>
               </div>
             </Step>
           )}
@@ -266,10 +309,10 @@ export default function SektorkopplungForm() {
             <Step stepKey="submit">
               <span className="gf-eyebrow">Fast geschafft</span>
               <h1 className="gf-step-title">Kurz drübergeschaut — dann ab zu uns</h1>
-              <p className="gf-step-sub">{completedCount} von {sites.length} Anlagen sind vollständig (Adresse).</p>
+              <p className="gf-step-sub">{completedCount} von {totalCount} Anlagen sind vollständig (Adresse).</p>
 
-              {completedCount < sites.length && (
-                <Hint kind="soft">Bei {sites.length - completedCount} Anlage(n) fehlt noch die Adresse. Gehen Sie einfach nochmal zurück.</Hint>
+              {completedCount < totalCount && (
+                <Hint kind="soft">Bei {totalCount - completedCount} Anlage(n) fehlt noch die Adresse. Gehen Sie einfach nochmal zurück.</Hint>
               )}
 
               <div className="gf-consent">

@@ -171,6 +171,10 @@ export function buildSummaryHtml(data) {
     html += section(`Anlage ${i + 1}: ${site.streetHeating || ''} ${site.plz || ''} ${site.city || ''}`.trim(), [
       kv('Versorgte Gebäude', site.suppliedBuildings),
       kv('Wohneinheiten', site.residentialUnits),
+      kv('Einsparberechnung gewünscht', site.calcSavings === true ? 'Ja' : site.calcSavings === false ? 'Nein' : ''),
+      kv('Jährl. Wärmebedarf', site.calcSavings === true && isFilled(site.annualHeatDemandKwh) ? `${site.annualHeatDemandKwh} kWh` : ''),
+      kv('Mieterstromteilnehmer', site.calcSavings === true ? site.tenantPowerParticipants : ''),
+      kv('Strompreis', site.calcSavings === true && isFilled(site.electricityPriceEurKwh) ? `${site.electricityPriceEurKwh} €/kWh` : ''),
       kv('Wärmepumpe', compState('waermepumpe') && `${compState('waermepumpe')} · ${[c.heatPumpModel, c.heatPumpCount && `${c.heatPumpCount}×`, c.heatPumpKw && `${c.heatPumpKw} kW`].filter(Boolean).join(', ')}`),
       kv('WP-Regler / Controller', sel.includes('waermepumpe') ? c.heatPumpController : ''),
       kv('WP-Topologie', sel.includes('waermepumpe') ? c.heatPumpTopology : ''),

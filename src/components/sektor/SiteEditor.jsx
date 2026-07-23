@@ -48,7 +48,7 @@ function StatusToggle({ value, onChange }) {
  * Modbus, PV-Nutzung/Betreiber/Zugriff, weitere Wärmeerzeuger) – diese trennen
  * grün/gelb/rot bei der Anbindbarkeit.
  */
-export default function SiteEditor({ site, onChange }) {
+export default function SiteEditor({ site, onChange, hideLocation = false }) {
   const set = (key) => (val) => onChange({ [key]: val });
   const patch = (partial) => onChange(partial);
   const setComp = (key) => (val) => onChange({ components: { ...site.components, [key]: val } });
@@ -57,12 +57,16 @@ export default function SiteEditor({ site, onChange }) {
 
   return (
     <div>
-      {/* ---- Standort ---- */}
-      <h3 style={{ fontSize: 16 }}>Wo steht diese Anlage?</h3>
-      <TextField label="Wo steht der Heizungskeller?" value={site.streetHeating} onChange={set('streetHeating')} required help="Adresse des Gebäudes mit der Anlage." />
-      <TextField label="Versorgt die Anlage noch andere Häuser?" value={site.suppliedBuildings} onChange={set('suppliedBuildings')} help="Nur wenn ja — sonst überspringen." />
-      <PlzCity plz={site.plz} city={site.city} onPatch={patch} />
-      <NumberField label="Wie viele Wohnungen hängen dran?" value={site.residentialUnits} onChange={set('residentialUnits')} help="Grobe Zahl reicht." />
+      {/* ---- Standort (im Tabellenmodus stehen diese Felder schon in der Zeile) ---- */}
+      {!hideLocation && (
+        <>
+          <h3 style={{ fontSize: 16 }}>Wo steht diese Anlage?</h3>
+          <TextField label="Wo steht der Heizungskeller?" value={site.streetHeating} onChange={set('streetHeating')} required help="Adresse des Gebäudes mit der Anlage." />
+          <TextField label="Versorgt die Anlage noch andere Häuser?" value={site.suppliedBuildings} onChange={set('suppliedBuildings')} help="Nur wenn ja — sonst überspringen." />
+          <PlzCity plz={site.plz} city={site.city} onPatch={patch} />
+          <NumberField label="Wie viele Wohnungen hängen dran?" value={site.residentialUnits} onChange={set('residentialUnits')} help="Grobe Zahl reicht." />
+        </>
+      )}
 
       {/* ---- Komponenten ---- */}
       <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Was ist da — oder ist geplant?</h3>
@@ -180,6 +184,26 @@ export default function SiteEditor({ site, onChange }) {
         />
       )}
       <ChoiceField label="Haben wir Zugriff bzw. die Erlaubnis, auf die Anlage zuzugreifen?" value={site.siteAccess} onChange={set('siteAccess')} options={SITE_ACCESS} />
+
+      {/* ---- Einsparpotenziale (optional) ---- */}
+      <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Berechnung der Einsparpotenziale (optional)</h3>
+      <ToggleField
+        label="Möchten Sie, dass wir Ihre Einsparpotenziale berechnen?"
+        value={site.calcSavings}
+        onChange={set('calcSavings')}
+        help="Freiwillig. Mit ein paar Zusatzangaben rechnen wir Ihre mögliche Ersparnis genauer aus."
+      />
+      {site.calcSavings === true && (
+        <div className="gf-card" style={{ marginBottom: 16 }}>
+          <p className="gf-help" style={{ marginTop: 0 }}>
+            Wenn Sie eine Berechnung wünschen, teilen Sie uns bitte diese Infos mit. Ihre Wohneinheiten
+            {has('batterie') ? ' und den Batteriespeicher' : ''} übernehmen wir aus Ihren Angaben oben.
+          </p>
+          <NumberField label="Jährlicher Wärmebedarf des Gebäudes" value={site.annualHeatDemandKwh} onChange={set('annualHeatDemandKwh')} suffix="kWh" help="Grobe Zahl reicht." />
+          <NumberField label="Anzahl der Mieterstromteilnehmer" value={site.tenantPowerParticipants} onChange={set('tenantPowerParticipants')} help="Wie viele Parteien beziehen Mieterstrom?" />
+          <NumberField label="Strompreis" value={site.electricityPriceEurKwh} onChange={set('electricityPriceEurKwh')} suffix="€/kWh" help="z. B. 0,32" />
+        </div>
+      )}
 
       {/* ---- Sonstiges ---- */}
       <TextField label="Wer hat die Anlage(n) gebaut?" value={site.installer} onChange={set('installer')} help="Optional — nur als Nebeninfo, falls wir mal Gerätezugang über den Installateur brauchen." />
