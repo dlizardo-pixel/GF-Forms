@@ -14,7 +14,6 @@ import {
   WP_TOPOLOGY,
   PV_USAGE,
   PV_OPERATOR,
-  SITE_ACCESS,
   PLANNING_HORIZON,
   OTHER_HEAT_SOURCES,
 } from '../../lib/options.js';
@@ -44,9 +43,9 @@ function StatusToggle({ value, onChange }) {
 
 /**
  * Editor für EINE Sektorkopplungs-Anlage. Enthält neben Standort & Komponenten
- * die fachlich entscheidenden Fragen (Regler/Controller, Topologie, EMS/GLT +
- * Modbus, PV-Nutzung/Betreiber/Zugriff, weitere Wärmeerzeuger) – diese trennen
- * grün/gelb/rot bei der Anbindbarkeit.
+ * die fachlich entscheidenden Fragen (Regler/Controller, Topologie, PV-Nutzung/
+ * Betreiber, weitere Wärmeerzeuger, anderes EMS/GLT) – diese trennen grün/gelb/rot
+ * bei der Anbindbarkeit.
  */
 export default function SiteEditor({ site, onChange, hideLocation = false }) {
   const set = (key) => (val) => onChange({ [key]: val });
@@ -82,17 +81,17 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
         <div className="gf-card" style={{ marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>Wärmepumpe</h3>
           <StatusToggle value={site.componentStatus.waermepumpe} onChange={setStatus('waermepumpe')} />
-          <AutocompleteField label="Hersteller & Modell der Wärmepumpe" value={site.components.heatPumpModel} onChange={setComp('heatPumpModel')} suggestions={HEAT_PUMP_MANUFACTURERS} help="Falls Sie's gerade zur Hand haben." />
-          <AutocompleteField
+          <AutocompleteField label="Hersteller der Wärmepumpe" value={site.components.heatPumpModel} onChange={setComp('heatPumpModel')} suggestions={HEAT_PUMP_MANUFACTURERS} help="Falls Sie's gerade zur Hand haben." />
+          <TextField
             label="Regler / Controller der Wärmepumpe"
             value={site.components.heatPumpController}
             onChange={setComp('heatPumpController')}
-            suggestions={HEAT_PUMP_MANUFACTURERS}
+            required
             help="Wichtig für die Anbindung (Modbus): Hersteller & Modell des Reglers — nicht das Installationsunternehmen."
           />
           <div className="gf-row2">
             <NumberField label="Wie viele?" value={site.components.heatPumpCount} onChange={setComp('heatPumpCount')} />
-            <NumberField label="Größe je Stück" value={site.components.heatPumpKw} onChange={setComp('heatPumpKw')} suffix="kW" />
+            <NumberField label="Größe je Stück (elektrisch)" value={site.components.heatPumpKw} onChange={setComp('heatPumpKw')} suffix="kW" />
           </div>
           <ChoiceField label="Wie sind die Wärmepumpen aufgebaut?" value={site.components.heatPumpTopology} onChange={setComp('heatPumpTopology')} options={WP_TOPOLOGY} />
           <ToggleField label="Ist die Wärmepumpe der Haupt-Wärmeerzeuger?" value={site.wpIsMainHeater} onChange={set('wpIsMainHeater')} />
@@ -103,13 +102,11 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
         <div className="gf-card" style={{ marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>Solaranlage (PV)</h3>
           <StatusToggle value={site.componentStatus.pv} onChange={setStatus('pv')} />
-          <AutocompleteField label="Hersteller & Modell des PV-Wechselrichters" value={site.components.pvInverterModel} onChange={setComp('pvInverterModel')} suggestions={PV_INVERTER_MANUFACTURERS} help="Der Wechselrichter — nicht der Solarteur." />
-          <div className="gf-row2">
-            <NumberField label="Wie viele Module/Stränge?" value={site.components.pvCount} onChange={setComp('pvCount')} />
-            <NumberField label="Größe gesamt" value={site.components.pvKwp} onChange={setComp('pvKwp')} suffix="kWp" />
-          </div>
+          <AutocompleteField label="Hersteller des PV-Wechselrichters" value={site.components.pvInverterManufacturer} onChange={setComp('pvInverterManufacturer')} suggestions={PV_INVERTER_MANUFACTURERS} help="Der Wechselrichter — nicht der Solarteur." />
+          <TextField label="Modell / Serie des PV-Wechselrichters" value={site.components.pvInverterModel} onChange={setComp('pvInverterModel')} help="z. B. Sunny Tripower, Symo … — wichtig für die Anbindbarkeit." />
+          <NumberField label="Größe gesamt" value={site.components.pvKwp} onChange={setComp('pvKwp')} suffix="kWp" />
           <ChoiceField
-            label="Wird der Solarstrom selbst verbraucht oder voll eingespeist?"
+            label="Wie wird der Solarstrom in Ihrem Gebäude genutzt?"
             value={site.pvUsage}
             onChange={set('pvUsage')}
             options={PV_USAGE}
@@ -172,7 +169,7 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
       />
 
       {/* ---- Anderes EMS / GLT ---- */}
-      <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Steuerung & Zugang</h3>
+      <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Weiteres Energiemanagement</h3>
       <ToggleField label="Gibt es bereits ein anderes Energiemanagement oder eine Gebäudeleittechnik (GLT)?" value={site.existingEms} onChange={set('existingEms')} />
       {site.existingEms === true && (
         <ChoiceField
@@ -183,7 +180,6 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
           help="Eine vorhandene Fremd-Steuerung auf denselben Schnittstellen kann die Anbindung blockieren."
         />
       )}
-      <ChoiceField label="Haben wir Zugriff bzw. die Erlaubnis, auf die Anlage zuzugreifen?" value={site.siteAccess} onChange={set('siteAccess')} options={SITE_ACCESS} />
 
       {/* ---- Einsparpotenziale (optional) ---- */}
       <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Berechnung der Einsparpotenziale (optional)</h3>
@@ -201,12 +197,11 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
           </p>
           <NumberField label="Jährlicher Wärmebedarf des Gebäudes" value={site.annualHeatDemandKwh} onChange={set('annualHeatDemandKwh')} suffix="kWh" help="Grobe Zahl reicht." />
           <NumberField label="Anzahl der Mieterstromteilnehmer" value={site.tenantPowerParticipants} onChange={set('tenantPowerParticipants')} help="Wie viele Parteien beziehen Mieterstrom?" />
-          <NumberField label="Strompreis" value={site.electricityPriceEurKwh} onChange={set('electricityPriceEurKwh')} suffix="€/kWh" help="z. B. 0,32" />
+          <NumberField label="Strompreis Wärmepumpe / Reststrom" value={site.electricityPriceEurKwh} onChange={set('electricityPriceEurKwh')} suffix="€/kWh" help="z. B. 0,32" />
         </div>
       )}
 
       {/* ---- Sonstiges ---- */}
-      <TextField label="Wer hat die Anlage(n) gebaut?" value={site.installer} onChange={set('installer')} help="Optional — nur als Nebeninfo, falls wir mal Gerätezugang über den Installateur brauchen." />
       <TextAreaField label="Möchten Sie uns zu dieser Anlage noch etwas sagen?" value={site.comment} onChange={set('comment')} />
 
       <Hint kind="info">Schätzen ist okay — fehlt etwas, klären wir es gemeinsam.</Hint>

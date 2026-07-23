@@ -1,0 +1,100 @@
+{
+  "name": "GF-Forms to Google Sheet (Intake)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gf-forms",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "b1c2d3e4-0001-4b00-9000-000000000001",
+      "name": "Webhook",
+      "webhookId": "gf-forms-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GF-Forms schickt ein JSON pro Anlage. Der Webhook legt den POST-Body unter\n// .body ab – hier heben wir ihn auf die oberste Ebene, damit die Google-Sheets-\n// Node die Felder automatisch den gleichnamigen Spalten zuordnen kann.\nreturn $input.all().map((item) => ({ json: item.json.body ?? item.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b1c2d3e4-0002-4b00-9000-000000000002",
+      "name": "Normalize"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 866907048,
+          "mode": "list",
+          "cachedResultName": "Formularantworten 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit#gid=866907048"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        0
+      ],
+      "id": "b1c2d3e4-0003-4b00-9000-000000000003",
+      "name": "Google Sheets - Append Row"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {},
+  "nodeGroups": [],
+  "tags": []
+}

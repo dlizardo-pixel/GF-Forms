@@ -26,3 +26,12 @@ BREVO_SENDER_NAME=Green Fusion
 # Admin-Bereich deaktiviert. Lokal mit `wrangler pages dev` nötig; bei
 # reinem `npm run dev` wird im Dev-Mock jedes Passwort akzeptiert.
 ADMIN_PASSWORD=geheim-bitte-aendern
+
+# n8n-Weitergabe (optional). Ist N8N_WEBHOOK_URL gesetzt, schickt die App bei
+# jeder Sektorkopplungs-Einreichung ein JSON je Anlage an diesen Webhook
+# (siehe docs/n8n.md). Leer = Feature aus. Nur mit `wrangler pages dev` aktiv.
+N8N_WEBHOOK_URL=
+
+# Standard-Ansprechpartner „bei Green Fusion", der an n8n mitgeschickt wird
+# (Gate-Feld in Joshuas Flow). Optional – Default ist "Daniel Lizardo".
+GF_DEFAULT_CONTACT=Daniel Lizardo
