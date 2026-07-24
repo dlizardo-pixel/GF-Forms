@@ -201,6 +201,26 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
         </div>
       )}
 
+      {/* ---- Einsparpotenziale (optional) ---- */}
+      <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Berechnung der Einsparpotenziale (optional)</h3>
+      <ToggleField
+        label="Möchten Sie, dass wir Ihre Einsparpotenziale berechnen?"
+        value={site.calcSavings}
+        onChange={set('calcSavings')}
+        help="Freiwillig. Mit ein paar Zusatzangaben rechnen wir Ihre mögliche Ersparnis genauer aus."
+      />
+      {site.calcSavings === true && (
+        <div className="gf-card" style={{ marginBottom: 16 }}>
+          <p className="gf-help" style={{ marginTop: 0 }}>
+            Wenn Sie eine Berechnung wünschen, teilen Sie uns bitte diese Infos mit. Ihre Wohneinheiten
+            {has('batterie') ? ' und den Batteriespeicher' : ''} übernehmen wir aus Ihren Angaben oben.
+          </p>
+          <NumberField label="Jährlicher Wärmebedarf des Gebäudes" value={site.annualHeatDemandKwh} onChange={set('annualHeatDemandKwh')} suffix="kWh" help="Grobe Zahl reicht." />
+          <NumberField label="Anzahl der Mieterstromteilnehmer" value={site.tenantPowerParticipants} onChange={set('tenantPowerParticipants')} help="Wie viele Parteien beziehen Mieterstrom?" />
+          <NumberField label="Strompreis" value={site.electricityPriceEurKwh} onChange={set('electricityPriceEurKwh')} suffix="€/kWh" help="z. B. 0,32" />
+        </div>
+      )}
+
       {/* ---- Sonstiges ---- */}
       <TextAreaField label="Möchten Sie uns zu dieser Anlage noch etwas sagen?" value={site.comment} onChange={set('comment')} />
 
