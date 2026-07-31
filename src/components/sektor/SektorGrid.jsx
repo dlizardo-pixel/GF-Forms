@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { lookupPlz } from '../../lib/plz.js';
 import { Hint } from '../Fields.jsx';
 import { makeSite, isSiteComplete } from '../../lib/sektorModel.js';
-import { siteHeatPumps } from '../../../shared/heatPumps.js';
+import { siteHeatPumps, missingControllerCount } from '../../../shared/heatPumps.js';
 import { SK_COMPONENTS } from '../../lib/options.js';
 import SiteEditor from './SiteEditor.jsx';
 
@@ -147,9 +147,16 @@ export default function SektorGrid({ sites, setSites }) {
                         className="gf-btn gf-btn-text"
                         style={{ padding: 2, fontSize: 13, textAlign: 'left' }}
                         onClick={() => toggleExpand(i)}
-                        title="Komponenten & Details bearbeiten"
+                        title={
+                          missingControllerCount(s) > 0
+                            ? 'Regler / Controller der Wärmepumpe fehlt noch — hier öffnen'
+                            : 'Komponenten & Details bearbeiten'
+                        }
                       >
                         {summary || <span style={{ color: 'var(--gf-glaciar-gray)' }}>+ Details</span>}
+                        {missingControllerCount(s) > 0 && (
+                          <span style={{ color: 'var(--gf-warning-dark)', display: 'block' }}>⚠ Regler fehlt</span>
+                        )}
                       </button>
                     </td>
                     <td className="gf-col-actions">

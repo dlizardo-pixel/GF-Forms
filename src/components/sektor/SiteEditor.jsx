@@ -24,7 +24,7 @@ import {
 } from '../../../shared/manufacturers.js';
 import { COMPONENT_ICON } from '../../lib/brandAssets.js';
 import { siteHasPlanned, makeHeatPump } from '../../lib/sektorModel.js';
-import { editableHeatPumps } from '../../../shared/heatPumps.js';
+import { editableHeatPumps, CONTROLLER_UNKNOWN } from '../../../shared/heatPumps.js';
 
 const COMPONENT_OPTIONS = SK_COMPONENTS.map((c) => ({ ...c, icon: COMPONENT_ICON[c.key] }));
 
@@ -49,6 +49,7 @@ function StatusToggle({ value, onChange }) {
 function HeatPumpFields({ pump, index, total, onChange, onDuplicate, onRemove }) {
   const set = (key) => (val) => onChange({ [key]: val });
   const many = total > 1;
+  const unknownController = pump.controller === CONTROLLER_UNKNOWN;
 
   const fields = (
     <>
@@ -66,6 +67,15 @@ function HeatPumpFields({ pump, index, total, onChange, onDuplicate, onRemove })
         required
         help="Wichtig für die Anbindung (Modbus): Hersteller & Modell des Reglers — nicht das Installationsunternehmen."
       />
+      {/* Ohne diesen Ausweg käme niemand durchs Formular, der den Regler nicht kennt. */}
+      <button
+        type="button"
+        className="gf-btn gf-btn-text"
+        style={{ padding: 0, marginTop: -8, marginBottom: 16 }}
+        onClick={() => set('controller')(unknownController ? '' : CONTROLLER_UNKNOWN)}
+      >
+        {unknownController ? '↩ Regler doch eintragen' : 'Regler kenne ich nicht — klären wir gemeinsam'}
+      </button>
       <div className="gf-row2">
         <NumberField
           label={many ? 'Wie viele Geräte dieses Typs?' : 'Wie viele?'}

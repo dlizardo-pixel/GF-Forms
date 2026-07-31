@@ -6,6 +6,7 @@ import { TextField, NumberField, Hint } from '../components/Fields.jsx';
 import SiteEditor from '../components/sektor/SiteEditor.jsx';
 import SektorGrid from '../components/sektor/SektorGrid.jsx';
 import { makeSite, isSiteComplete, normalizeSite } from '../lib/sektorModel.js';
+import { missingControllerCount } from '../../shared/heatPumps.js';
 import { readPrefill, readEncodedPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
@@ -173,6 +174,10 @@ export default function SektorkopplungForm() {
   }
 
   const completedCount = sites.filter(isSiteComplete).length;
+  // Anlagen, bei denen der Regler noch fehlt (gleiche Regel wie die Prüfung beim Absenden).
+  const missingController = sites
+    .map((s, index) => ({ index, name: s.streetHeating, count: missingControllerCount(s) }))
+    .filter((m) => m.count > 0);
   // Im Tabellenmodus können Zeilen hinzukommen – dann zählt die tatsächliche Zeilenzahl.
   const totalCount = mode === 'grid' ? sites.length || count : count;
   const mailtoHref =
@@ -335,6 +340,19 @@ export default function SektorkopplungForm() {
 
               {completedCount < totalCount && (
                 <Hint kind="soft">Bei {totalCount - completedCount} Anlage(n) fehlt noch die Adresse. Gehen Sie einfach nochmal zurück.</Hint>
+              )}
+
+              {/* Regler ist Pflicht – hier schon sagen, wo er fehlt, statt erst beim Absenden. */}
+              {missingController.length > 0 && (
+                <Hint kind="soft">
+                  Ohne Regler / Controller der Wärmepumpe können wir die Anbindung nicht einschätzen — er fehlt noch
+                  bei: {missingController.map((m) => `Anlage ${m.index + 1}${m.name ? ` (${m.name})` : ''}`).join(', ')}.
+                  <br />
+                  <button type="button" className="gf-btn gf-btn-text" style={{ padding: 0 }} onClick={() => setPhase('sites')}>
+                    ← Dort ergänzen
+                  </button>{' '}
+                  — oder tippen Sie dort auf „Regler kenne ich nicht", dann klären wir es gemeinsam.
+                </Hint>
               )}
 
               <div className="gf-consent">

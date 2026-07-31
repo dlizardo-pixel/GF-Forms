@@ -19,6 +19,14 @@
 
 export const HEAT_PUMP_FIELDS = ['model', 'controller', 'count', 'kw', 'topology'];
 
+/**
+ * Antwort für „Regler kenne ich nicht". Der Regler entscheidet über die
+ * Anbindbarkeit und bleibt deshalb ein Pflichtfeld — aber niemand soll am
+ * Formular scheitern, weil die Angabe gerade nicht vorliegt. Diese Antwort
+ * zählt als ausgefüllt; Green Fusion klärt den Regler dann gemeinsam.
+ */
+export const CONTROLLER_UNKNOWN = 'weiß nicht';
+
 /** Alte Einzelfelder in `site.components` (nur noch für Rückwärtskompatibilität). */
 export const LEGACY_HEAT_PUMP_KEYS = [
   'heatPumpModel',
@@ -79,6 +87,19 @@ export function editableHeatPumps(site) {
   const legacy = siteHeatPumps(site); // noch nichts Neues eingetragen → alte Einzelfelder
   if (legacy.length) return legacy;
   return raw.length ? raw : [makeHeatPump()];
+}
+
+/**
+ * Anlagen, bei denen der Regler noch fehlt — dieselbe Regel wie in der
+ * serverseitigen Prüfung, damit die Oberfläche vorher darauf hinweisen kann
+ * (statt den Kunden erst beim Absenden auflaufen zu lassen).
+ */
+export function missingControllerCount(site) {
+  const selected = Array.isArray(site && site.selectedComponents) && site.selectedComponents.includes('waermepumpe');
+  if (!selected) return 0;
+  const pumps = siteHeatPumps(site);
+  if (!pumps.length) return 1;
+  return pumps.filter((hp) => !filled(hp.controller)).length;
 }
 
 /** Summe der Geräte über alle Einträge (leeres `count` zählt als 1). */
