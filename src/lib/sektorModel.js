@@ -1,5 +1,13 @@
 /** Datenmodell-Helfer für das Sektorkopplungs-Formular (mehrere Anlagen). */
 
+import {
+  makeHeatPump,
+  editableHeatPumps,
+  LEGACY_HEAT_PUMP_KEYS,
+} from '../../shared/heatPumps.js';
+
+export { makeHeatPump };
+
 /** Leere Anlage. Optional Werte einer Vorgänger-Anlage übernehmen (ohne Adresse). */
 export function makeSite(prev = null) {
   const base = {
@@ -15,12 +23,12 @@ export function makeSite(prev = null) {
     componentStatus: {}, // pro Komponente: 'vorhanden' | 'geplant'
     planningHorizon: '', // nur relevant, wenn etwas geplant ist
 
+    // Wärmepumpen: eine Liste, damit mehrere verschiedene Geräte (anderes
+    // Modell, anderer Regler) je Anlage erfasst werden können. Gleiche Geräte
+    // werden im Eintrag über `count` zusammengefasst. Siehe shared/heatPumps.js.
+    heatPumps: [makeHeatPump()],
+
     components: {
-      heatPumpModel: '',
-      heatPumpCount: '',
-      heatPumpKw: '',
-      heatPumpController: '', // Regler/Controller (entscheidet Anbindbarkeit, nicht der Installateur)
-      heatPumpTopology: '',
       pvInverterManufacturer: '', // PV-Wechselrichter Hersteller (für Anbindbarkeits-Abgleich)
       pvInverterModel: '', // PV-Wechselrichter Modell / Serie
       pvKwp: '',
@@ -67,6 +75,23 @@ export function makeSite(prev = null) {
     };
   }
   return base;
+}
+
+/**
+ * Bringt Rohdaten (Browser-Entwurf, Prefill-Link, API-Payload) auf das aktuelle
+ * Modell: fehlende Felder ergänzen und eine einzelne Wärmepumpe aus den alten
+ * Einzelfeldern (`components.heatPump*`) in die Liste `heatPumps` übernehmen.
+ */
+export function normalizeSite(raw) {
+  const empty = makeSite();
+  const site = { ...empty, ...(raw || {}) };
+  site.components = { ...empty.components, ...((raw && raw.components) || {}) };
+  // Bewusst aus `raw`: sonst würde die leere Vorgabe aus makeSite() eine alte
+  // Wärmepumpe aus `components.heatPump*` verdecken.
+  site.heatPumps = editableHeatPumps(raw || {});
+  // Alte Einzelfelder entfernen – ab jetzt gilt ausschließlich `heatPumps`.
+  LEGACY_HEAT_PUMP_KEYS.forEach((k) => delete site.components[k]);
+  return site;
 }
 
 /** Pflichtfelder einer Anlage erfüllt? (Adresse) */

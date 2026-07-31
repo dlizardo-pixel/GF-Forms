@@ -12,6 +12,7 @@
 import { buildStandardCsv, buildSektorkopplungCsv } from './csv.js';
 import { describeConversion } from './conversion.js';
 import { formatOtherHeatSources } from './sektorLabels.js';
+import { siteHeatPumps, formatHeatPump } from './heatPumps.js';
 
 function isFilled(v) {
   return v !== undefined && v !== null && String(v).trim() !== '';
@@ -68,9 +69,22 @@ export function validateSubmission(data) {
       if (!isFilled(s.plz)) errors.push(`Anlage ${n}: PLZ fehlt.`);
       if (!isFilled(s.city)) errors.push(`Anlage ${n}: Stadt fehlt.`);
       // Regler/Controller ist für die Anbindbarkeit entscheidend → Pflicht,
-      // sobald eine Wärmepumpe erfasst ist.
-      if (Array.isArray(s.selectedComponents) && s.selectedComponents.includes('waermepumpe') && !isFilled(s.components && s.components.heatPumpController)) {
-        errors.push(`Anlage ${n}: Regler / Controller der Wärmepumpe fehlt.`);
+      // sobald eine Wärmepumpe erfasst ist – und zwar je Wärmepumpe, weil eine
+      // Anlage mehrere verschiedene Wärmepumpen haben kann.
+      if (Array.isArray(s.selectedComponents) && s.selectedComponents.includes('waermepumpe')) {
+        const pumps = siteHeatPumps(s);
+        if (!pumps.length) {
+          errors.push(`Anlage ${n}: Regler / Controller der Wärmepumpe fehlt.`);
+        } else {
+          pumps.forEach((hp, j) => {
+            if (isFilled(hp.controller)) return;
+            errors.push(
+              pumps.length > 1
+                ? `Anlage ${n}: Regler / Controller der Wärmepumpe ${j + 1} fehlt.`
+                : `Anlage ${n}: Regler / Controller der Wärmepumpe fehlt.`,
+            );
+          });
+        }
       }
     });
   } else {
@@ -106,6 +120,23 @@ const section = (heading, rows) => {
   return `<h2 style="font-size:15px;color:#062726;margin:20px 0 6px;border-bottom:2px solid #3AD99F;padding-bottom:4px;">${esc(heading)}</h2>
   <table style="width:100%;border-collapse:collapse;font-size:14px;">${body}</table>`;
 };
+
+/**
+ * Eine Zeile je Wärmepumpe der Anlage — eine Anlage kann mehrere verschiedene
+ * Wärmepumpen haben. Der Status („läuft schon"/„geplant") gilt für die
+ * Komponente insgesamt und steht deshalb nur in der ersten Zeile.
+ */
+function heatPumpRows(site, selected, status) {
+  if (!selected) return [];
+  const pumps = siteHeatPumps(site);
+  if (!pumps.length) return [kv('Wärmepumpe', status)];
+  return pumps.map((hp, i) =>
+    kv(
+      pumps.length > 1 ? `Wärmepumpe ${i + 1}` : 'Wärmepumpe',
+      [i === 0 ? status : '', formatHeatPump(hp)].filter(Boolean).join(' · '),
+    ),
+  );
+}
 
 /** Lesbare Zusammenfassung für die E-Mail an den GF-Mitarbeiter. */
 export function buildSummaryHtml(data) {
@@ -180,9 +211,7 @@ export function buildSummaryHtml(data) {
       kv('Jährl. Wärmebedarf', site.calcSavings === true && isFilled(site.annualHeatDemandKwh) ? `${site.annualHeatDemandKwh} kWh` : ''),
       kv('Mieterstromteilnehmer', site.calcSavings === true ? site.tenantPowerParticipants : ''),
       kv('Strompreis Wärmepumpe / Reststrom', site.calcSavings === true && isFilled(site.electricityPriceEurKwh) ? `${site.electricityPriceEurKwh} €/kWh` : ''),
-      kv('Wärmepumpe', compState('waermepumpe') && `${compState('waermepumpe')} · ${[c.heatPumpModel, c.heatPumpCount && `${c.heatPumpCount}×`, c.heatPumpKw && `${c.heatPumpKw} kW`].filter(Boolean).join(', ')}`),
-      kv('WP-Regler / Controller', sel.includes('waermepumpe') ? c.heatPumpController : ''),
-      kv('WP-Topologie', sel.includes('waermepumpe') ? c.heatPumpTopology : ''),
+      ...heatPumpRows(site, sel.includes('waermepumpe'), compState('waermepumpe')),
       kv('WP ist Haupterzeuger', sel.includes('waermepumpe') ? (site.wpIsMainHeater === true ? 'Ja' : site.wpIsMainHeater === false ? 'Nein' : '') : ''),
       kv('Weitere Wärmeerzeuger', formatOtherHeatSources(site)),
       kv('Heizstab', compState('heizstab') && `${compState('heizstab')} · ${[c.heatingRodCount && `${c.heatingRodCount}×`, c.heatingRodKw && `${c.heatingRodKw} kW`].filter(Boolean).join(', ')}`),

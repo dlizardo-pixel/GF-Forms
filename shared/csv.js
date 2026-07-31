@@ -8,6 +8,7 @@
 
 import { consumptionToKwh } from './conversion.js';
 import { formatComponentStatus, formatOtherHeatSources, formatPvOperator, jaNein as jaNeinLbl } from './sektorLabels.js';
+import { siteHeatPumps, joinHeatPumpField } from './heatPumps.js';
 
 const SEP = ';';
 const BOM = '﻿';
@@ -97,6 +98,7 @@ export function buildSektorkopplungCsv(data) {
     'Mieterstromteilnehmer',
     'Strompreis (€/kWh)',
     'Komponenten (Status)',
+    'Wärmepumpen (Typen)',
     'Wärmepumpe (Hersteller)',
     'WP-Regler/Controller',
     'WP-Topologie',
@@ -126,6 +128,11 @@ export function buildSektorkopplungCsv(data) {
   const siteLine = (site, nr) => {
     const c = site.components || {};
     const has = (key) => Array.isArray(site.selectedComponents) && site.selectedComponents.includes(key);
+    // Mehrere verschiedene Wärmepumpen je Anlage: die WP-Spalten enthalten alle
+    // Einträge mit " | " getrennt – das i-te Teilstück gehört in jeder Spalte
+    // zur i-ten Wärmepumpe ("Stiebel Eltron | Vaillant" ↔ "ISG-Web | sensoNET").
+    const pumps = (key) => (has('waermepumpe') ? joinHeatPumpField(site, key) : '');
+    const pumpTypes = has('waermepumpe') ? siteHeatPumps(site).length || '' : '';
     return rowToLine([
       nr,
       site.streetHeating,
@@ -138,11 +145,12 @@ export function buildSektorkopplungCsv(data) {
       site.calcSavings === true ? site.tenantPowerParticipants : '',
       site.calcSavings === true ? site.electricityPriceEurKwh : '',
       formatComponentStatus(site),
-      has('waermepumpe') ? c.heatPumpModel : '',
-      has('waermepumpe') ? c.heatPumpController : '',
-      has('waermepumpe') ? c.heatPumpTopology : '',
-      has('waermepumpe') ? c.heatPumpCount : '',
-      has('waermepumpe') ? c.heatPumpKw : '',
+      pumpTypes,
+      pumps('model'),
+      pumps('controller'),
+      pumps('topology'),
+      pumps('count'),
+      pumps('kw'),
       has('waermepumpe') ? jaNeinLbl(site.wpIsMainHeater) : '',
       formatOtherHeatSources(site),
       has('heizstab') ? c.heatingRodCount : '',

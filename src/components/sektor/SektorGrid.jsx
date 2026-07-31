@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { lookupPlz } from '../../lib/plz.js';
 import { Hint } from '../Fields.jsx';
 import { makeSite, isSiteComplete } from '../../lib/sektorModel.js';
+import { siteHeatPumps } from '../../../shared/heatPumps.js';
 import { SK_COMPONENTS } from '../../lib/options.js';
 import SiteEditor from './SiteEditor.jsx';
 
@@ -56,7 +57,14 @@ export default function SektorGrid({ sites, setSites }) {
   const componentSummary = (s) => {
     const sel = Array.isArray(s.selectedComponents) ? s.selectedComponents : [];
     if (!sel.length) return '';
-    return sel.map((k) => COMPONENT_LABEL[k] || k).join(', ');
+    const pumpCount = siteHeatPumps(s).length;
+    return sel
+      .map((k) => {
+        const label = COMPONENT_LABEL[k] || k;
+        // Mehrere verschiedene Wärmepumpen in der Zeile sichtbar machen.
+        return k === 'waermepumpe' && pumpCount > 1 ? `${label} (${pumpCount})` : label;
+      })
+      .join(', ');
   };
 
   return (

@@ -408,6 +408,15 @@ GF-Forms/
   EMS/GLT + Modbus, PV-Nutzung Eigenverbrauch/Volleinspeisung, PV-Betreiber,
   Zugriff/Erlaubnis, Zeithorizont). CSV-/E-Mail-Spalten dazu in `shared/csv.js`
   und `shared/submission.js`, Beschriftungen in `shared/sektorLabels.js`.
+- **Sektorkopplung – mehrere Wärmepumpen je Anlage:** Eine Anlage kann
+  verschiedene Wärmepumpen haben (anderes Modell, anderer Regler, andere Größe).
+  Sie stehen als Liste in `site.heatPumps` (`{ model, controller, count, kw,
+  topology }`); gleiche Geräte fasst `count` zusammen. Gemeinsame Logik in
+  `shared/heatPumps.js` (auch die Übernahme alter Entwürfe/Prefill-Links mit
+  genau einer Wärmepumpe in `components.heatPump*`). In der CSV enthalten die
+  WP-Spalten alle Einträge mit `" | "` getrennt (das i-te Teilstück gehört in
+  jeder Spalte zur i-ten Wärmepumpe), die E-Mail listet eine Zeile je
+  Wärmepumpe.
 - **„Ich möchte beides"** (Startseite): füllt erst das klassische Formular aus
   (`/standard?both=1`), reicht den Kontakt per `sessionStorage` weiter und
   wechselt danach zu `/sektorkopplung?both=1` (zwei getrennte Einreichungen).
