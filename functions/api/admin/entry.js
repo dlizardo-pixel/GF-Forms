@@ -6,6 +6,7 @@
 import { getEntry } from '../../_lib/store.js';
 import { json, adminGuard } from '../../_lib/admin.js';
 import { buildStandardCsv, buildSektorkopplungCsv } from '../../../shared/csv.js';
+import { DEFAULT_GF_CONTACT } from '../../../shared/n8n.js';
 
 export async function onRequestGet({ request, env }) {
   const denied = adminGuard(request, env);
@@ -25,7 +26,14 @@ export async function onRequestGet({ request, env }) {
   if (!entry) return json({ ok: false, error: 'Nicht gefunden.' }, 404);
 
   if (url.searchParams.get('format') === 'csv') {
-    const csv = entry.type === 'standard' ? buildStandardCsv(entry.data) : buildSektorkopplungCsv(entry.data);
+    const csv =
+      entry.type === 'standard'
+        ? buildStandardCsv(entry.data)
+        : buildSektorkopplungCsv(entry.data, {
+            gfContact: env.GF_DEFAULT_CONTACT || DEFAULT_GF_CONTACT,
+            // Zeitstempel der Einreichung, nicht der des Downloads.
+            now: entry.submitted_at ? new Date(entry.submitted_at) : new Date(entry.created_at || Date.now()),
+          });
     const filename = `GF-${entry.type}-${id.slice(0, 8)}.csv`;
     return new Response(csv, {
       headers: {

@@ -47,6 +47,11 @@ export function makeSite(prev = null) {
     existingEms: undefined, // anderes EMS/GLT vorhanden?
     existingEmsModbus: '', // nutzt es Modbus?
 
+    // Stromzähler rund um die Wärmepumpe (siehe METER_TYPES / METER_SPLITS).
+    // Entscheidet mit, ob der Wärmepumpen-Strom getrennt messbar ist.
+    meterType: '',
+    meterSplit: '',
+
     pvUsage: '', // Nutzung des PV-Stroms im Gebäude (siehe PV_USAGE)
     pvOperator: '', // selbst / Dritter / weiß nicht
     pvOperatorName: '', // falls Dritter

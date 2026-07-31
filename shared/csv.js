@@ -7,24 +7,23 @@
  */
 
 import { consumptionToKwh } from './conversion.js';
-import { formatComponentStatus, formatOtherHeatSources, formatPvOperator, jaNein as jaNeinLbl } from './sektorLabels.js';
-import { siteHeatPumps, joinHeatPumpField } from './heatPumps.js';
+import { ALL_COLUMNS, buildSektorRows } from './sektorExport.js';
 
 const SEP = ';';
 const BOM = '﻿';
 
-/** Maskiert ein einzelnes CSV-Feld nach RFC 4180 (mit ; als Trenner). */
-function csvCell(value) {
+/** Maskiert ein einzelnes CSV-Feld nach RFC 4180. */
+function csvCell(value, sep = SEP) {
   if (value === null || value === undefined) return '';
   const str = String(value);
-  if (str.includes(SEP) || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+  if (str.includes(sep) || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return '"' + str.replace(/"/g, '""') + '"';
   }
   return str;
 }
 
-function rowToLine(cells) {
-  return cells.map(csvCell).join(SEP);
+function rowToLine(cells, sep = SEP) {
+  return cells.map((c) => csvCell(c, sep)).join(sep);
 }
 
 /**
@@ -83,97 +82,21 @@ export function buildStandardCsv(data) {
 
 /**
  * CSV für "Sektorkopplung".
- * Eigene Spalten für die Komponenten (Abschnitt 7, zweiter Absatz).
+ *
+ * Format = Spalten des bisherigen Google-Formulars „Technischer Fragebogen
+ * Sektorkopplung (Antworten)" (siehe shared/sektorExport.js), zusätzliche
+ * GF-Forms-Felder hinten angehängt. Eine Zeile je Anlage.
+ *
+ * Trennzeichen ist hier bewusst das KOMMA (nicht das Semikolon wie in der
+ * klassischen Anlagenliste): Die Datei soll sich 1:1 in dasselbe Sheet
+ * einfügen lassen wie der bisherige Formular-Export, und der ist
+ * kommasepariert.
  */
-export function buildSektorkopplungCsv(data) {
-  const headers = [
-    'Nr.',
-    'Straße & Hausnr. Heizungsanlage',
-    'Versorgte Gebäude',
-    'PLZ',
-    'Stadt',
-    'Wohneinheiten',
-    'Einsparberechnung gewünscht',
-    'Jährl. Wärmebedarf (kWh)',
-    'Mieterstromteilnehmer',
-    'Strompreis (€/kWh)',
-    'Komponenten (Status)',
-    'Wärmepumpen (Typen)',
-    'Wärmepumpe (Hersteller)',
-    'Wärmepumpe (Modell/Typ)',
-    'WP-Regler/Controller',
-    'WP-Topologie',
-    'WP Anzahl',
-    'WP kW (elektrisch)',
-    'WP Haupterzeuger',
-    'Weitere Wärmeerzeuger',
-    'Heizstab Anzahl',
-    'Heizstab kW',
-    'Pufferspeicher Anzahl',
-    'Pufferspeicher Liter',
-    'PV-Wechselrichter Hersteller',
-    'PV-Wechselrichter Modell/Serie',
-    'PV kWp',
-    'PV-Nutzung',
-    'PV-Betreiber',
-    'Batterie-Wechselrichter (Hersteller/Modell)',
-    'Batterie Anzahl',
-    'Batterie kWh',
-    'Anderes EMS/GLT',
-    'EMS nutzt Modbus',
-    'Zeithorizont (Planung)',
-    'Kommentar',
+export function buildSektorkopplungCsv(data, { gfContact = '', now = new Date() } = {}) {
+  const rows = buildSektorRows(data, { gfContact, now });
+  const lines = [
+    rowToLine(ALL_COLUMNS, ','),
+    ...rows.map((row) => rowToLine(ALL_COLUMNS.map((col) => row[col]), ',')),
   ];
-
-  const sites = Array.isArray(data.sites) ? data.sites : [data]; // Rückwärtskompatibel zum Einzel-Anlagen-Format
-  const siteLine = (site, nr) => {
-    const c = site.components || {};
-    const has = (key) => Array.isArray(site.selectedComponents) && site.selectedComponents.includes(key);
-    // Mehrere verschiedene Wärmepumpen je Anlage: die WP-Spalten enthalten alle
-    // Einträge mit " | " getrennt – das i-te Teilstück gehört in jeder Spalte
-    // zur i-ten Wärmepumpe ("Stiebel Eltron | Vaillant" ↔ "ISG-Web | sensoNET").
-    const pumps = (key) => (has('waermepumpe') ? joinHeatPumpField(site, key) : '');
-    const pumpTypes = has('waermepumpe') ? siteHeatPumps(site).length || '' : '';
-    return rowToLine([
-      nr,
-      site.streetHeating,
-      site.suppliedBuildings,
-      site.plz,
-      site.city,
-      site.residentialUnits,
-      jaNeinLbl(site.calcSavings),
-      site.calcSavings === true ? site.annualHeatDemandKwh : '',
-      site.calcSavings === true ? site.tenantPowerParticipants : '',
-      site.calcSavings === true ? site.electricityPriceEurKwh : '',
-      formatComponentStatus(site),
-      pumpTypes,
-      pumps('manufacturer'),
-      pumps('model'),
-      pumps('controller'),
-      pumps('topology'),
-      pumps('count'),
-      pumps('kw'),
-      has('waermepumpe') ? jaNeinLbl(site.wpIsMainHeater) : '',
-      formatOtherHeatSources(site),
-      has('heizstab') ? c.heatingRodCount : '',
-      has('heizstab') ? c.heatingRodKw : '',
-      has('pufferspeicher') ? c.bufferCount : '',
-      has('pufferspeicher') ? c.bufferLiters : '',
-      has('pv') ? c.pvInverterManufacturer : '',
-      has('pv') ? c.pvInverterModel : '',
-      has('pv') ? c.pvKwp : '',
-      has('pv') ? site.pvUsage : '',
-      has('pv') ? formatPvOperator(site) : '',
-      has('batterie') ? c.batteryInverterModel : '',
-      has('batterie') ? c.batteryCount : '',
-      has('batterie') ? c.batteryKwh : '',
-      jaNeinLbl(site.existingEms),
-      site.existingEms === true ? site.existingEmsModbus : '',
-      site.planningHorizon,
-      site.comment,
-    ]);
-  };
-
-  const lines = [rowToLine(headers), ...sites.map((site, i) => siteLine(site, i + 1))];
   return BOM + lines.join('\r\n');
 }

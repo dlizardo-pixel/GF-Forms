@@ -260,14 +260,17 @@ function customerContact(data) {
  * Bündelt alles, was beim Absenden gebraucht wird.
  * Wird von Function und Dev-Mock gemeinsam genutzt.
  */
-export function buildSubmission(data) {
+export function buildSubmission(data, { gfContact = '', now = new Date() } = {}) {
   const errors = validateSubmission(data);
   if (errors.length) {
     return { valid: false, errors };
   }
 
   const isStandard = data.type === 'standard';
-  const csv = isStandard ? buildStandardCsv(data) : buildSektorkopplungCsv(data);
+  // `gfContact`/`now` gehen in die Sektorkopplungs-CSV (Spalten „Ihr
+  // Ansprechpartner bei Green Fusion" und „Zeitstempel") – damit die
+  // CSV-Anlage denselben Stand hat wie die Weitergabe an n8n.
+  const csv = isStandard ? buildStandardCsv(data) : buildSektorkopplungCsv(data, { gfContact, now });
   const stamp = new Date().toISOString().slice(0, 10);
   const csvFilename = isStandard
     ? `GF-Anlagenliste_Standard_${stamp}.csv`

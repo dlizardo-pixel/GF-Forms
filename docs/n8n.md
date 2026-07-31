@@ -66,12 +66,16 @@ App läuft normal weiter.
 
 ## Feld-Mapping (App-JSON → Sheet-Spalte)
 
-Ein Objekt **pro Anlage**. Quelle: `shared/n8n.js`. Die Schlüssel sind zugleich
-die Spaltenüberschriften im Sheet.
+Ein Objekt **pro Anlage**. Quelle: `shared/sektorExport.js` (dieselbe Datei
+erzeugt auch die CSV im Mail-Anhang, damit beide Wege nicht auseinanderlaufen);
+die Weitergabe selbst steckt in `shared/n8n.js`. Die Schlüssel sind zugleich die
+Spaltenüberschriften im Sheet — auch die **Antworten** entsprechen wörtlich der
+Auswahl des alten Google-Formulars (`Installiert & in Betrieb`,
+`Nur Wärmepumpen und ggf. Heizstäbe`, …), damit Filter im Sheet greifen.
 
 | Spalte / JSON-Schlüssel | Herkunft in GF-Forms |
 | --- | --- |
-| `Zeitstempel` | Absende-Zeitpunkt (Europe/Berlin, z. B. `23.07.2026 14:30`) |
+| `Zeitstempel` | Absende-Zeitpunkt (Europe/Berlin, sekundengenau, z. B. `31.07.2026 10:37:02`; je Anlage +1 s, damit die Zeilen einer Einreichung unterscheidbar bleiben) |
 | `Adressen aller Gebäude mit gleichen Eigenschaften` | Straße + PLZ + Stadt der Anlage |
 | `Ihr Unternehmen` | Unternehmen (Ansprechpartner) |
 | `Ihr Ansprechpartner bei Green Fusion` | Default `Daniel Lizardo` (`GF_DEFAULT_CONTACT`) |
@@ -87,6 +91,12 @@ die Spaltenüberschriften im Sheet.
 | `Nutzung von PV-Strom in ihrem Gebäude?` | PV-Nutzung |
 | `PV-Partner ` | PV-Betreiber |
 | `Gibt es ein Gebäudeleittechnik (GLT)-System oder Energiemonitoring/managementsystem (EMS) in ihrem Gebäude?` | EMS/GLT (Ja/Nein, ggf. Modbus) |
+| `Was für einen Stromzähler hängt vor der Wärmepumpe?` | Zählerart (iMSys / mME / ETZ / HT-NT …) |
+| `Was für Stromzähler gibt es bei Ihnen für der Wärmepumpe?` | Zähleraufteilung |
+| `Berechnung der Einsparpotenziale (optional)` | Wunsch + Wärmebedarf, WE, Speicher, Strompreis als Text |
+| `Status Wärmepumpen-System (alt)` | Liste der gewählten Komponenten |
+| `Anlage Nr.` | laufende Nummer der Anlage innerhalb der Einreichung (Zusatzfeld) |
+| `Einreichung` | ID der Einreichung – verbindet die Zeilen (Zusatzfeld) |
 
 > **Wichtig:** Drei Schlüssel enthalten bewusst ein **abschließendes Leerzeichen**
 > (`Andere Wärmeerzeuger `, `PV-Anlage Konfiguration `, `PV-Partner `), weil die
@@ -100,6 +110,47 @@ die Spaltenüberschriften im Sheet.
 > getrennt darin (`Stiebel Eltron | Vaillant` ↔ `ISG-Web | sensoNET`). Das i-te
 > Teilstück gehört in jedem Feld zur i-ten Wärmepumpe; `—` heißt „für diese
 > Wärmepumpe nicht angegeben".
+
+## Es landet nur EINE Zeile im Sheet, obwohl mehrere Anlagen eingereicht wurden
+
+GF-Forms schickt **einen POST je Anlage** (nacheinander, siehe
+`forwardToN8n()` in `functions/api/submit.js`) und jede Anlage hat einen eigenen
+Zeitstempel (sekundengenau, je Anlage +1 s) sowie die Felder `Anlage Nr.` und
+`Einreichung`. Vier Anlagen = vier Aufrufe = vier Zeilen. Wenn trotzdem nur eine
+Zeile ankommt, liegt es an der n8n-Seite. Diese vier Ursachen der Reihe nach
+prüfen:
+
+1. **Test-URL statt Produktions-URL.** Zeigt `N8N_WEBHOOK_URL` auf
+   `…/webhook-test/…`, verarbeitet n8n nur den **ersten** Aufruf pro „Listen for
+   test event"; die übrigen laufen ins Leere. Die Produktions-URL heißt
+   `…/webhook/…` und der Workflow muss **aktiv** sein. Häufigste Ursache.
+2. **Google-Sheets-Node auf „Append or Update" mit Matching-Spalte.** Wenn als
+   Matching-Spalte etwas steht, das alle Anlagen gemeinsam haben (z. B. „Ihr
+   Unternehmen" oder „Zeitstempel" bei minutengenauem Stempel), aktualisieren
+   die folgenden Aufrufe **dieselbe Zeile** statt neue anzulegen. Auf
+   **„Append"** stellen — oder als Matching-Spalte `Einreichung` **plus**
+   `Anlage Nr.` verwenden.
+3. **Dublettenfilter im Flow.** Ein „Filter New Entries"-Schritt, der auf
+   Unternehmen oder Adresse vergleicht, wirft die weiteren Anlagen als
+   Duplikate weg. Filter zusätzlich auf `Anlage Nr.` / `Einreichung` stützen.
+4. **Ein Aufruf mit einem Array.** Kommt der Body als JSON-Array an (z. B. weil
+   ein Zwischenschritt sammelt), ist das in n8n **ein** Item → eine Zeile. Die
+   `Normalize`-Node in `n8n/GF-Forms-to-GoogleSheet.json` teilt Arrays deshalb
+   inzwischen in einzelne Items auf; in Joshuas Flow leistet ein
+   **Split-Out**-Node dasselbe.
+
+Schneller Test ohne Formular: zwei Aufrufe hintereinander an die
+Produktions-URL schicken und im Sheet nachsehen, ob zwei Zeilen entstehen.
+
+```bash
+for i in 1 2; do
+  curl -sS -X POST "$N8N_WEBHOOK_URL" -H 'Content-Type: application/json' \
+    -d "{\"Zeitstempel\":\"31.07.2026 10:0$i:00\",\"Ihr Ansprechpartner bei Green Fusion\":\"Test\",\"Ihr Unternehmen\":\"Testfirma\",\"Adressen aller Gebäude mit gleichen Eigenschaften\":\"Teststraße $i\",\"Anlage Nr.\":$i,\"Einreichung\":\"curl-test\"}"
+done
+```
+
+Kommen dabei zwei Zeilen an, liegt es nicht am Webhook, sondern an einem
+Schritt weiter hinten im Flow (Punkt 2 oder 3).
 
 ## Bekannte Punkte
 

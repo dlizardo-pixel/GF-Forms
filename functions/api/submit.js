@@ -47,17 +47,26 @@ async function forwardToN8n(env, data) {
   });
   if (!payloads.length) return;
 
-  await Promise.allSettled(
-    payloads.map((payload) =>
-      fetch(url, {
+  // Bewusst SEQUENZIELL, nicht parallel: Ein Flow, der das Sheet erst liest und
+  // dann anhängt (oder „Append or Update" nutzt), verliert bei gleichzeitigen
+  // Aufrufen Zeilen — mehrere Anlagen landen dann in einer einzigen Zeile.
+  // Ein Aufruf je Anlage ist außerdem Pflicht: Ein POST mit einem Array wäre in
+  // n8n nur EIN Item und würde ebenfalls nur eine Zeile schreiben.
+  for (const payload of payloads) {
+    try {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).then((res) => {
-        if (!res.ok) throw new Error(`n8n-Webhook HTTP ${res.status}`);
-      }),
-    ),
-  );
+      });
+      if (!res.ok) throw new Error(`n8n-Webhook HTTP ${res.status}`);
+    } catch (err) {
+      // Weitergeben ist „best effort" – eine fehlgeschlagene Anlage darf die
+      // übrigen nicht verhindern.
+      // eslint-disable-next-line no-console
+      console.error(`n8n-Weitergabe für Anlage ${payload['Anlage Nr.'] || '?'} fehlgeschlagen:`, err);
+    }
+  }
 }
 
 function json(body, status = 200) {
@@ -105,7 +114,7 @@ export async function onRequestPost(context) {
   }
 
   // Schritt 1 + 2: Validieren und CSV erzeugen (gemeinsame Logik mit dem Dev-Mock).
-  const result = buildSubmission(data);
+  const result = buildSubmission(data, { gfContact: env.GF_DEFAULT_CONTACT || DEFAULT_GF_CONTACT });
   if (!result.valid) {
     return json({ ok: false, errors: result.errors }, 422);
   }

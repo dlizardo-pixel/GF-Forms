@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// GF-Forms schickt ein JSON pro Anlage. Der Webhook legt den POST-Body unter\n// .body ab – hier heben wir ihn auf die oberste Ebene, damit die Google-Sheets-\n// Node die Felder automatisch den gleichnamigen Spalten zuordnen kann.\nreturn $input.all().map((item) => ({ json: item.json.body ?? item.json }));"
+        "jsCode": "// GF-Forms schickt ein JSON pro Anlage (ein POST je Anlage). Der Webhook legt\n// den POST-Body unter .body ab – hier heben wir ihn auf die oberste Ebene, damit\n// die Google-Sheets-Node die Felder automatisch den gleichnamigen Spalten\n// zuordnen kann.\n//\n// Zusätzlich wird ein Array im Body in EINZELNE Items aufgeteilt. Ohne das\n// bleibt ein Array ein einziges Item — und dann schreibt der Flow bei mehreren\n// Anlagen nur EINE Zeile ins Sheet.\nconst out = [];\nfor (const item of $input.all()) {\n  const payload = item.json.body ?? item.json;\n  if (Array.isArray(payload)) {\n    for (const row of payload) out.push({ json: row });\n  } else {\n    out.push({ json: payload });\n  }\n}\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

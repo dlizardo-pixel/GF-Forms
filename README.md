@@ -398,7 +398,16 @@ GF-Forms/
 ## 8. Anpassen & Erweitern
 
 - **Umrechnungsfaktoren** (z. B. genauere Brennwerte): `shared/conversion.js`.
-- **CSV-Spalten**: `shared/csv.js` (an die bestehende GF-Anlagenliste angelehnt).
+- **CSV-Spalten**: `shared/csv.js`. Die klassische Anlagenliste ist an das
+  bestehende GF-Format angelehnt (Semikolon). Die **Sektorkopplungs-CSV** folgt
+  dagegen zeichengenau den Spalten des bisherigen Google-Formulars „Technischer
+  Fragebogen Sektorkopplung (Antworten)" — Spaltennamen, Reihenfolge und
+  Antwort-Wortlaut stehen in `shared/sektorExport.js` und gelten als
+  verbindlich (inkl. der drei Namen mit Leerzeichen am Ende). Zusätzliche
+  GF-Forms-Felder werden **hinten angehängt**, nie dazwischen. Trennzeichen dort:
+  Komma, wie im Google-Export — damit die Datei ohne Nacharbeit ins gleiche
+  Sheet passt. Dieselbe Datei speist auch die n8n-Weitergabe, damit Sheet und
+  Mail-Anhang nicht auseinanderlaufen.
 - **Auswahloptionen** (Heizungstypen, Komponenten, WP-Topologie, PV-Nutzung,
   EMS/Zugriff …): `src/lib/options.js`.
 - **Sektorkopplung – mehrere Anlagen:** Ansprechpartner einmal, dann je Anlage

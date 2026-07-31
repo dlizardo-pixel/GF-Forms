@@ -65,6 +65,25 @@ export const PV_USAGE = [
 // Wer betreibt die PV-Anlage?
 export const PV_OPERATOR = ['Wir selbst', 'Ein Dritter (z. B. Einhundert, metergrid …)', 'weiß nicht'];
 
+// Stromzähler vor der Wärmepumpe. Wortlaut wie im bisherigen Formular
+// („Technischer Fragebogen Sektorkopplung"), damit die Auswertung im Sheet passt.
+export const METER_TYPES = [
+  'Intelligentes Messsystem (iMSys / Smart Meter) (mit Kommunikationsmodul)',
+  'Moderne Messeinrichtung (mME) (keine Kommunikationmodul)',
+  'Eintarifzähler (ETZ)',
+  'Zweitarifzähler (HT/NT)',
+  'nicht vorhanden',
+  'Nicht bekannt',
+];
+
+// Aufteilung der Zähler rund um die Wärmepumpe (gleicher Wortlaut wie oben).
+export const METER_SPLITS = [
+  'Ein Heizungszähler (Wärmepumpe + Heizstab + andere Pumpen)',
+  'Separate Zähler für Wärmepumpe(n) und Heizstab',
+  'Ein Stromzähler für Allgemeinstrom + Heizung (Wärmepumpe, etc.)',
+  'Andere Zähleraufteilung',
+];
+
 // Zeithorizont bei „in Planung".
 export const PLANNING_HORIZON = ['In den nächsten 6 Monaten', 'In mehr als 6 Monaten', 'weiß nicht'];
 

@@ -16,6 +16,8 @@ import {
   PV_OPERATOR,
   PLANNING_HORIZON,
   OTHER_HEAT_SOURCES,
+  METER_TYPES,
+  METER_SPLITS,
 } from '../../lib/options.js';
 import {
   HEAT_PUMP_MANUFACTURERS,
@@ -273,6 +275,27 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
       {/* Zeithorizont, wenn etwas geplant ist */}
       {siteHasPlanned(site) && (
         <ChoiceField label="Wann soll das Geplante in Betrieb gehen?" value={site.planningHorizon} onChange={set('planningHorizon')} options={PLANNING_HORIZON} />
+      )}
+
+      {/* ---- Stromzähler (nur wenn eine Wärmepumpe im Spiel ist) ---- */}
+      {has('waermepumpe') && (
+        <>
+          <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Stromzähler</h3>
+          <ChoiceField
+            label="Was für einen Stromzähler hängt vor der Wärmepumpe?"
+            value={site.meterType}
+            onChange={set('meterType')}
+            options={METER_TYPES}
+            help={'Steht meist auf dem Zähler im Zählerschrank. „Nicht bekannt" ist auch eine Antwort.'}
+          />
+          <ChoiceField
+            label="Was für Stromzähler gibt es bei Ihnen für der Wärmepumpe?"
+            value={site.meterSplit}
+            onChange={set('meterSplit')}
+            options={METER_SPLITS}
+            help="Wichtig dafür, ob wir den Wärmepumpen-Strom getrennt sehen können."
+          />
+        </>
       )}
 
       {/* ---- Weitere Wärmeerzeuger ---- */}
