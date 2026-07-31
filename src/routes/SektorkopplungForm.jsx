@@ -6,7 +6,7 @@ import { TextField, NumberField, Hint } from '../components/Fields.jsx';
 import SiteEditor from '../components/sektor/SiteEditor.jsx';
 import SektorGrid from '../components/sektor/SektorGrid.jsx';
 import { makeSite, isSiteComplete, normalizeSite } from '../lib/sektorModel.js';
-import { readPrefill } from '../lib/prefill.js';
+import { readPrefill, readEncodedPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
 import { scheduleCloudSave, getCloudId, clearCloudId } from '../lib/draftSync.js';
@@ -32,27 +32,39 @@ export default function SektorkopplungForm() {
     }
   }, [both]);
 
+  // Vorausgefüllter Link von Green Fusion: lang (?prefill=<base64>, alles in der
+  // URL) oder kurz (?p=<id>, Daten liegen in D1). Der Kunde ergänzt nur noch,
+  // was fehlt (z. B. Regler der Wärmepumpe).
+  const encoded = useMemo(() => readEncodedPrefill(search), [search]);
+
   const defaultContact = {
-    contactName: handoff?.contactName || prefill.contactName,
-    company: handoff?.company || prefill.company,
-    contactEmail: handoff?.contactEmail || prefill.contactEmail,
-    contactPhone: '',
+    contactName: handoff?.contactName || encoded?.contact?.contactName || prefill.contactName,
+    company: handoff?.company || encoded?.contact?.company || prefill.company,
+    contactEmail: handoff?.contactEmail || encoded?.contact?.contactEmail || prefill.contactEmail,
+    contactPhone: encoded?.contact?.contactPhone || '',
   };
+
+  // Anlagen aus dem langen Prefill-Link (leer = eine leere Anlage).
+  const initialSites = Array.isArray(encoded?.sites) && encoded.sites.length ? encoded.sites : [makeSite()];
 
   // Kurzlink (?p=<id>): vorbereiteter/erneut geöffneter Datensatz aus D1.
   const shortId = useMemo(() => new URLSearchParams(search).get('p') || '', [search]);
 
-  const [phase, setPhase] = useState(draft?.phase ?? 'contact'); // 'contact' | 'sites' | 'submit'
+  // Steht die E-Mail schon im Link, kann der Kunde direkt bei den Anlagen anfangen.
+  const [phase, setPhase] = useState(draft?.phase ?? (encoded?.contact?.contactEmail ? 'sites' : 'contact')); // 'contact' | 'sites' | 'submit'
   const [contact, setContact] = useState(draft?.contact ?? defaultContact);
   // Entwürfe können aus einer älteren Version stammen (eine WP in `components`)
   // → beim Wiederherstellen auf das aktuelle Modell bringen.
-  const [sites, setSites] = useState(() => (draft?.sites ?? [makeSite()]).map(normalizeSite));
-  const [siteCount, setSiteCount] = useState(draft?.siteCount ?? '1'); // vorab abgefragte Anzahl Anlagen
+  const [sites, setSites] = useState(() => (draft?.sites ?? initialSites).map(normalizeSite));
+  const [siteCount, setSiteCount] = useState(
+    draft?.siteCount ?? String((Array.isArray(encoded?.sites) && encoded.sites.length) || 1),
+  ); // vorab abgefragte Anzahl Anlagen
   const [current, setCurrent] = useState(draft?.current ?? 0);
   const [restored, setRestored] = useState(!!draft);
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [isPrefill, setIsPrefill] = useState(!!encoded && !draft);
   const [prefillLoading, setPrefillLoading] = useState(!!shortId && !draft);
 
   // Kurzlink: Daten vom Server holen und anwenden (nur wenn kein Entwurf existiert).
@@ -75,6 +87,7 @@ export default function SektorkopplungForm() {
           if (Array.isArray(pl.sites) && pl.sites.length) {
             setSites(pl.sites.map(normalizeSite));
             setSiteCount(String(pl.sites.length));
+            setIsPrefill(true);
           }
           if (c.contactEmail) setPhase('sites');
         }
@@ -207,6 +220,13 @@ export default function SektorkopplungForm() {
           <Hint kind="info">
             <strong>Teil 2 von 2:</strong> Teil 1 (klassische Heizungen) ist abgeschickt — danke! Jetzt noch
             die Anlagen mit Wärmepumpe oder Solar.
+          </Hint>
+        )}
+
+        {isPrefill && !restored && (
+          <Hint kind="info">
+            <strong>Wir haben Ihre Anlagen für Sie vorbereitet.</strong> Bitte schauen Sie kurz drüber und
+            ergänzen, was noch fehlt — vor allem den Regler/Controller der Wärmepumpen.
           </Hint>
         )}
 

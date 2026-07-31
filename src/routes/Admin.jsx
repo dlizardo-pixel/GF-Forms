@@ -107,11 +107,9 @@ export default function Admin() {
       const body = await res.json().catch(() => ({}));
       if (res.ok && body.ok && body.id) {
         setLinkModal({ url: `${window.location.origin}/${route}?p=${body.id}` });
-      } else if (type === 'standard') {
-        // Rückfall (nur klassisches Formular kann lange Links lesen).
-        setLinkModal({ url: `${window.location.origin}/${route}?prefill=${encodePrefill(payload)}` });
       } else {
-        setError(body.error || 'Link konnte nicht erzeugt werden.');
+        // Rückfall ohne Datenbank: langer Link — beide Formulare lesen `?prefill=`.
+        setLinkModal({ url: `${window.location.origin}/${route}?prefill=${encodePrefill(payload)}` });
       }
     } catch {
       setError('Link konnte nicht erzeugt werden.');

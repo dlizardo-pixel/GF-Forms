@@ -56,6 +56,16 @@ Die Links sind **90 Tage** gültig (danach werden die hinterlegten Daten
 automatisch gelöscht). Öffnet der Kunde den Link, während im selben Browser ein
 eigener Entwurf existiert, gewinnt der Entwurf (Fortschritt geht nicht verloren).
 
+### Ohne API: langer Link (`?prefill=<base64>`)
+
+Beide Formulare lesen denselben Datenstand auch direkt aus der URL:
+`/standard?prefill=<base64url-json>` bzw. `/sektorkopplung?prefill=<base64url-json>`
+(Kodierung siehe `encodePrefill()` in `src/lib/prefill.js` — JSON → UTF-8 →
+base64url). Das braucht **weder Token noch Datenbank** und läuft nicht ab,
+erzeugt aber je nach Datenmenge eine mehrere Kilobyte lange URL. Für den Versand
+an Kunden ist der kurze `?p=`-Link die schönere Variante; der lange Link ist der
+Rückfall (z. B. wenn kein Token zur Hand ist).
+
 ## 3. Payload-Format
 
 ### `type: "standard"` (klassisches Formular → `/standard?p=…`)

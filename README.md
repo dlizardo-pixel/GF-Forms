@@ -463,7 +463,11 @@ ist schon ausgefüllt → er ergänzt nur den Heizungstyp.
   Endpunkte `functions/api/admin/prefill.js` (anlegen, geschützt) und
   `functions/api/prefill.js` (abrufen, öffentlich – die zufällige ID ist der Schlüssel).
 - Ohne D1 erzeugt der Generator automatisch einen langen, selbsttragenden Link
-  `…/standard?prefill=<base64>` (Logik in `src/lib/prefill.js`).
+  `…?prefill=<base64>` (Logik in `src/lib/prefill.js`). **Beide** Formulare lesen
+  diese Form — `…/standard?prefill=…` und `…/sektorkopplung?prefill=…`; sie
+  braucht weder Token noch Datenbank und läuft nicht ab, die URL wird aber lang.
+  Bei der Sektorkopplung enthält der Link den kompletten Datenstand
+  (`{ contact, sites: [...] }`), inklusive mehrerer Wärmepumpen je Anlage.
 - Ein vorhandener Browser-Entwurf hat Vorrang, damit Kundenfortschritt nicht verloren geht.
 
 ### Bewusst noch nicht enthalten (spätere Stufen)
