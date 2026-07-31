@@ -13,7 +13,7 @@
  */
 
 import { STATUS_LABELS, formatOtherHeatSources, formatPvOperator } from './sektorLabels.js';
-import { joinHeatPumpField } from './heatPumps.js';
+import { joinHeatPumpField, siteHeatPumps, heatPumpName } from './heatPumps.js';
 
 // Fallback-Ansprechpartner: der Flow verwirft Einträge, bei denen
 // „Ihr Ansprechpartner bei Green Fusion" leer ist (Filter New Entries).
@@ -79,7 +79,13 @@ export function buildN8nPayloads(data, { gfContact = DEFAULT_GF_CONTACT } = {}) 
       // Teilstück gehört in jedem Feld zur i-ten Wärmepumpe.
       'Status Wärmepumpen-System': statusLabel(site, 'waermepumpe'),
       'Wärmepumpen-Konfiguration': has(site, 'waermepumpe') ? joinHeatPumpField(site, 'topology') : '',
-      'Hersteller der Wärmepumpe': has(site, 'waermepumpe') ? joinHeatPumpField(site, 'model') : '',
+      // Der Flow hat nur ein Feld für die Wärmepumpe → Hersteller und Modell
+      // zusammen ("Buderus Logaplus WLW-MB AH 12"), damit nichts verloren geht.
+      'Hersteller der Wärmepumpe': has(site, 'waermepumpe')
+        ? siteHeatPumps(site)
+            .map((hp) => heatPumpName(hp) || '—')
+            .join(' | ')
+        : '',
       'Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)': has(site, 'waermepumpe')
         ? joinHeatPumpField(site, 'controller')
         : '',

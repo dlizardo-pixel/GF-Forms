@@ -410,8 +410,12 @@ GF-Forms/
   und `shared/submission.js`, Beschriftungen in `shared/sektorLabels.js`.
 - **Sektorkopplung – mehrere Wärmepumpen je Anlage:** Eine Anlage kann
   verschiedene Wärmepumpen haben (anderes Modell, anderer Regler, andere Größe).
-  Sie stehen als Liste in `site.heatPumps` (`{ model, controller, count, kw,
-  topology }`); gleiche Geräte fasst `count` zusammen. Gemeinsame Logik in
+  Sie stehen als Liste in `site.heatPumps` (`{ manufacturer, model, controller,
+  count, kw, topology }`); gleiche Geräte fasst `count` zusammen. Hersteller,
+  Modell/Typ und Regler sind bewusst drei Felder — in Bestandslisten stehen
+  meist nur Hersteller und Modell, während der Regler über die Anbindbarkeit
+  entscheidet. Wer ihn nicht kennt, wählt „Regler kenne ich nicht"
+  (`CONTROLLER_UNKNOWN`), damit das Absenden nicht blockiert. Gemeinsame Logik in
   `shared/heatPumps.js` (auch die Übernahme alter Entwürfe/Prefill-Links mit
   genau einer Wärmepumpe in `components.heatPump*`). In der CSV enthalten die
   WP-Spalten alle Einträge mit `" | "` getrennt (das i-te Teilstück gehört in

@@ -17,7 +17,7 @@
  * gemeinsam.
  */
 
-export const HEAT_PUMP_FIELDS = ['model', 'controller', 'count', 'kw', 'topology'];
+export const HEAT_PUMP_FIELDS = ['manufacturer', 'model', 'controller', 'count', 'kw', 'topology'];
 
 /**
  * Antwort für „Regler kenne ich nicht". Der Regler entscheidet über die
@@ -36,9 +36,22 @@ export const LEGACY_HEAT_PUMP_KEYS = [
   'heatPumpTopology',
 ];
 
-/** Leerer Wärmepumpen-Eintrag. */
+/**
+ * Leerer Wärmepumpen-Eintrag.
+ *
+ * `manufacturer` und `model` sind getrennt (wie beim PV-Wechselrichter): In
+ * Bestandslisten steht das Gerät meist als „Buderus" + „Logaplus WLW-MB AH 12"
+ * oder „Viessmann" + „Vitocal 151-A13". Der `controller` ist etwas anderes —
+ * der Regler entscheidet über die Anbindung (z. B. Logamatic, Vitotronic,
+ * ISG-Web) und fehlt in solchen Listen oft.
+ */
 export function makeHeatPump() {
-  return { model: '', controller: '', count: '', kw: '', topology: '' };
+  return { manufacturer: '', model: '', controller: '', count: '', kw: '', topology: '' };
+}
+
+/** „Buderus Logaplus WLW-MB AH 12" – Hersteller und Modell als ein Name. */
+export function heatPumpName(hp) {
+  return [hp.manufacturer, hp.model].filter((v) => filled(v)).join(' ');
 }
 
 const filled = (v) => v !== undefined && v !== null && String(v).trim() !== '';
@@ -52,7 +65,10 @@ export function heatPumpIsEmpty(hp) {
 function legacyHeatPump(site) {
   const c = (site && site.components) || {};
   return {
-    model: c.heatPumpModel || '',
+    // `heatPumpModel` war im alten Formular mit „Hersteller der Wärmepumpe"
+    // beschriftet – der Wert gehört deshalb in `manufacturer`.
+    manufacturer: c.heatPumpModel || '',
+    model: '',
     controller: c.heatPumpController || '',
     count: c.heatPumpCount || '',
     kw: c.heatPumpKw || '',
@@ -113,7 +129,7 @@ export function heatPumpUnitCount(site) {
  */
 export function formatHeatPump(hp) {
   return [
-    hp.model,
+    heatPumpName(hp),
     filled(hp.count) ? `${hp.count}×` : '',
     filled(hp.kw) ? `${hp.kw} kW` : '',
     filled(hp.controller) ? `Regler: ${hp.controller}` : '',

@@ -169,11 +169,18 @@ Eintrag ist für einen anderen Typ:
   "selectedComponents": ["waermepumpe"],
   "componentStatus": { "waermepumpe": "vorhanden" },
   "heatPumps": [
-    { "model": "Stiebel Eltron", "controller": "ISG-Web", "count": "3", "kw": "12", "topology": "Kaskade über einen Regler" },
-    { "model": "Vaillant", "controller": "sensoNET", "count": "1", "kw": "20", "topology": "Eine Wärmepumpe" }
+    { "manufacturer": "Stiebel Eltron", "model": "WPL 25 A", "controller": "ISG-Web", "count": "3", "kw": "12", "topology": "Kaskade über einen Regler" },
+    { "manufacturer": "Vaillant", "model": "aroTHERM plus", "controller": "sensoNET", "count": "1", "kw": "20", "topology": "Eine Wärmepumpe" }
   ]
 }
 ```
+
+`manufacturer` (Hersteller), `model` (Bezeichnung vom Typenschild) und
+`controller` (Regler, entscheidet über die Anbindung) sind **drei verschiedene
+Angaben**. In Bestandslisten stehen meist nur die ersten beiden — dann
+`controller` leer lassen (der Kunde ergänzt ihn oder wählt im Formular „Regler
+kenne ich nicht", was als `"weiß nicht"` gespeichert wird). Nicht die
+Typbezeichnung des Geräts in `controller` schreiben.
 
 `topology` nimmt die Werte aus `WP_TOPOLOGY` (`Eine Wärmepumpe`,
 `Kaskade über einen Regler`, `Mehrere parallel über verschiedene Regler`,

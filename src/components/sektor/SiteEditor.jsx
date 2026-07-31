@@ -55,10 +55,16 @@ function HeatPumpFields({ pump, index, total, onChange, onDuplicate, onRemove })
     <>
       <AutocompleteField
         label="Hersteller der Wärmepumpe"
-        value={pump.model}
-        onChange={set('model')}
+        value={pump.manufacturer}
+        onChange={set('manufacturer')}
         suggestions={HEAT_PUMP_MANUFACTURERS}
         help="Falls Sie's gerade zur Hand haben."
+      />
+      <TextField
+        label="Modell / Typ der Wärmepumpe"
+        value={pump.model}
+        onChange={set('model')}
+        help={'Die Bezeichnung vom Typenschild, z. B. „Logaplus WLW-MB AH 12" oder „Vitocal 151-A13".'}
       />
       <TextField
         label="Regler / Controller der Wärmepumpe"
