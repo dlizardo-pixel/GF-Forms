@@ -13,6 +13,7 @@
  */
 
 import { STATUS_LABELS, formatOtherHeatSources, formatPvOperator } from './sektorLabels.js';
+import { joinHeatPumpField } from './heatPumps.js';
 
 // Fallback-Ansprechpartner: der Flow verwirft Einträge, bei denen
 // „Ihr Ansprechpartner bei Green Fusion" leer ist (Filter New Entries).
@@ -73,10 +74,15 @@ export function buildN8nPayloads(data, { gfContact = DEFAULT_GF_CONTACT } = {}) 
       'Ihr Unternehmen': contact.company || '',
       'Ihr Ansprechpartner bei Green Fusion': gfContact,
 
+      // Mehrere verschiedene Wärmepumpen je Anlage werden in denselben Schlüsseln
+      // mit " | " geliefert (der Flow bleibt damit unverändert); das i-te
+      // Teilstück gehört in jedem Feld zur i-ten Wärmepumpe.
       'Status Wärmepumpen-System': statusLabel(site, 'waermepumpe'),
-      'Wärmepumpen-Konfiguration': has(site, 'waermepumpe') ? c.heatPumpTopology || '' : '',
-      'Hersteller der Wärmepumpe': has(site, 'waermepumpe') ? c.heatPumpModel || '' : '',
-      'Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)': has(site, 'waermepumpe') ? c.heatPumpController || '' : '',
+      'Wärmepumpen-Konfiguration': has(site, 'waermepumpe') ? joinHeatPumpField(site, 'topology') : '',
+      'Hersteller der Wärmepumpe': has(site, 'waermepumpe') ? joinHeatPumpField(site, 'model') : '',
+      'Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)': has(site, 'waermepumpe')
+        ? joinHeatPumpField(site, 'controller')
+        : '',
       'Andere Wärmeerzeuger ': formatOtherHeatSources(site),
 
       'Status PV-Anlage': statusLabel(site, 'pv'),

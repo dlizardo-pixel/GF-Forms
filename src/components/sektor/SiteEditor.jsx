@@ -23,7 +23,8 @@ import {
   BATTERY_INVERTER_MANUFACTURERS,
 } from '../../../shared/manufacturers.js';
 import { COMPONENT_ICON } from '../../lib/brandAssets.js';
-import { siteHasPlanned } from '../../lib/sektorModel.js';
+import { siteHasPlanned, makeHeatPump } from '../../lib/sektorModel.js';
+import { editableHeatPumps } from '../../../shared/heatPumps.js';
 
 const COMPONENT_OPTIONS = SK_COMPONENTS.map((c) => ({ ...c, icon: COMPONENT_ICON[c.key] }));
 
@@ -42,6 +43,79 @@ function StatusToggle({ value, onChange }) {
 }
 
 /**
+ * Felder EINER Wärmepumpe. Bei mehreren Wärmepumpen je Anlage wird dieser Block
+ * mehrfach gerendert (nummeriert), bei nur einer bleibt die Ansicht schlicht.
+ */
+function HeatPumpFields({ pump, index, total, onChange, onDuplicate, onRemove }) {
+  const set = (key) => (val) => onChange({ [key]: val });
+  const many = total > 1;
+
+  const fields = (
+    <>
+      <AutocompleteField
+        label="Hersteller der Wärmepumpe"
+        value={pump.model}
+        onChange={set('model')}
+        suggestions={HEAT_PUMP_MANUFACTURERS}
+        help="Falls Sie's gerade zur Hand haben."
+      />
+      <TextField
+        label="Regler / Controller der Wärmepumpe"
+        value={pump.controller}
+        onChange={set('controller')}
+        required
+        help="Wichtig für die Anbindung (Modbus): Hersteller & Modell des Reglers — nicht das Installationsunternehmen."
+      />
+      <div className="gf-row2">
+        <NumberField
+          label={many ? 'Wie viele Geräte dieses Typs?' : 'Wie viele?'}
+          value={pump.count}
+          onChange={set('count')}
+        />
+        <NumberField label="Größe je Stück (elektrisch)" value={pump.kw} onChange={set('kw')} suffix="kW" />
+      </div>
+      <ChoiceField
+        label={many ? 'Wie ist diese Wärmepumpe aufgebaut?' : 'Wie sind die Wärmepumpen aufgebaut?'}
+        value={pump.topology}
+        onChange={set('topology')}
+        options={WP_TOPOLOGY}
+      />
+    </>
+  );
+
+  if (!many) return fields;
+
+  return (
+    <div className="gf-subcard">
+      <div className="gf-subcard-head">
+        <strong>Wärmepumpe {index + 1}</strong>
+        <span style={{ display: 'flex', gap: 4 }}>
+          <button
+            type="button"
+            className="gf-btn gf-btn-text"
+            style={{ fontSize: 15, padding: 2 }}
+            onClick={onDuplicate}
+            title="Diese Wärmepumpe kopieren"
+          >
+            ⧉
+          </button>
+          <button
+            type="button"
+            className="gf-btn gf-btn-text"
+            style={{ fontSize: 15, padding: 2, color: 'var(--gf-error)' }}
+            onClick={onRemove}
+            title="Diese Wärmepumpe entfernen"
+          >
+            ✕
+          </button>
+        </span>
+      </div>
+      {fields}
+    </div>
+  );
+}
+
+/**
  * Editor für EINE Sektorkopplungs-Anlage. Enthält neben Standort & Komponenten
  * die fachlich entscheidenden Fragen (Regler/Controller, Topologie, PV-Nutzung/
  * Betreiber, weitere Wärmeerzeuger, anderes EMS/GLT) – diese trennen grün/gelb/rot
@@ -53,6 +127,17 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
   const setComp = (key) => (val) => onChange({ components: { ...site.components, [key]: val } });
   const setStatus = (key) => (val) => onChange({ componentStatus: { ...site.componentStatus, [key]: val } });
   const has = (key) => site.selectedComponents.includes(key);
+
+  // Wärmepumpen als Liste – auch alte Entwürfe/Prefills haben hier mindestens einen Eintrag.
+  const pumps = editableHeatPumps(site);
+  const setPumps = (list) => onChange({ heatPumps: list });
+  const patchPump = (index) => (partial) =>
+    setPumps(pumps.map((hp, i) => (i === index ? { ...hp, ...partial } : hp)));
+  const addPump = () => setPumps([...pumps, makeHeatPump()]);
+  const duplicatePump = (index) =>
+    setPumps([...pumps.slice(0, index + 1), { ...pumps[index] }, ...pumps.slice(index + 1)]);
+  const removePump = (index) =>
+    setPumps(pumps.length > 1 ? pumps.filter((_, i) => i !== index) : [makeHeatPump()]);
 
   return (
     <div>
@@ -79,22 +164,38 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
 
       {has('waermepumpe') && (
         <div className="gf-card" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Wärmepumpe</h3>
+          <h3 style={{ marginTop: 0 }}>{pumps.length > 1 ? `Wärmepumpen (${pumps.length})` : 'Wärmepumpe'}</h3>
           <StatusToggle value={site.componentStatus.waermepumpe} onChange={setStatus('waermepumpe')} />
-          <AutocompleteField label="Hersteller der Wärmepumpe" value={site.components.heatPumpModel} onChange={setComp('heatPumpModel')} suggestions={HEAT_PUMP_MANUFACTURERS} help="Falls Sie's gerade zur Hand haben." />
-          <TextField
-            label="Regler / Controller der Wärmepumpe"
-            value={site.components.heatPumpController}
-            onChange={setComp('heatPumpController')}
-            required
-            help="Wichtig für die Anbindung (Modbus): Hersteller & Modell des Reglers — nicht das Installationsunternehmen."
+
+          {pumps.map((hp, i) => (
+            <HeatPumpFields
+              key={i}
+              pump={hp}
+              index={i}
+              total={pumps.length}
+              onChange={patchPump(i)}
+              onDuplicate={() => duplicatePump(i)}
+              onRemove={() => removePump(i)}
+            />
+          ))}
+
+          <button type="button" className="gf-btn gf-btn-ghost" style={{ marginBottom: 8 }} onClick={addPump}>
+            + Weitere Wärmepumpe hinzufügen
+          </button>
+          <p className="gf-help" style={{ marginTop: 0 }}>
+            Haben Sie hier verschiedene Wärmepumpen (anderes Modell oder anderer Regler)? Dann tragen Sie
+            jede einzeln ein. Mehrere gleiche Geräte fassen Sie einfach über „Wie viele" zusammen.
+          </p>
+
+          <ToggleField
+            label={
+              pumps.length > 1
+                ? 'Sind die Wärmepumpen der Haupt-Wärmeerzeuger?'
+                : 'Ist die Wärmepumpe der Haupt-Wärmeerzeuger?'
+            }
+            value={site.wpIsMainHeater}
+            onChange={set('wpIsMainHeater')}
           />
-          <div className="gf-row2">
-            <NumberField label="Wie viele?" value={site.components.heatPumpCount} onChange={setComp('heatPumpCount')} />
-            <NumberField label="Größe je Stück (elektrisch)" value={site.components.heatPumpKw} onChange={setComp('heatPumpKw')} suffix="kW" />
-          </div>
-          <ChoiceField label="Wie sind die Wärmepumpen aufgebaut?" value={site.components.heatPumpTopology} onChange={setComp('heatPumpTopology')} options={WP_TOPOLOGY} />
-          <ToggleField label="Ist die Wärmepumpe der Haupt-Wärmeerzeuger?" value={site.wpIsMainHeater} onChange={set('wpIsMainHeater')} />
         </div>
       )}
 
@@ -198,26 +299,6 @@ export default function SiteEditor({ site, onChange, hideLocation = false }) {
           <NumberField label="Jährlicher Wärmebedarf des Gebäudes" value={site.annualHeatDemandKwh} onChange={set('annualHeatDemandKwh')} suffix="kWh" help="Grobe Zahl reicht." />
           <NumberField label="Anzahl der Mieterstromteilnehmer" value={site.tenantPowerParticipants} onChange={set('tenantPowerParticipants')} help="Wie viele Parteien beziehen Mieterstrom?" />
           <NumberField label="Strompreis Wärmepumpe / Reststrom" value={site.electricityPriceEurKwh} onChange={set('electricityPriceEurKwh')} suffix="€/kWh" help="z. B. 0,32" />
-        </div>
-      )}
-
-      {/* ---- Einsparpotenziale (optional) ---- */}
-      <h3 style={{ fontSize: 16, marginTop: 'var(--gf-space-8)' }}>Berechnung der Einsparpotenziale (optional)</h3>
-      <ToggleField
-        label="Möchten Sie, dass wir Ihre Einsparpotenziale berechnen?"
-        value={site.calcSavings}
-        onChange={set('calcSavings')}
-        help="Freiwillig. Mit ein paar Zusatzangaben rechnen wir Ihre mögliche Ersparnis genauer aus."
-      />
-      {site.calcSavings === true && (
-        <div className="gf-card" style={{ marginBottom: 16 }}>
-          <p className="gf-help" style={{ marginTop: 0 }}>
-            Wenn Sie eine Berechnung wünschen, teilen Sie uns bitte diese Infos mit. Ihre Wohneinheiten
-            {has('batterie') ? ' und den Batteriespeicher' : ''} übernehmen wir aus Ihren Angaben oben.
-          </p>
-          <NumberField label="Jährlicher Wärmebedarf des Gebäudes" value={site.annualHeatDemandKwh} onChange={set('annualHeatDemandKwh')} suffix="kWh" help="Grobe Zahl reicht." />
-          <NumberField label="Anzahl der Mieterstromteilnehmer" value={site.tenantPowerParticipants} onChange={set('tenantPowerParticipants')} help="Wie viele Parteien beziehen Mieterstrom?" />
-          <NumberField label="Strompreis" value={site.electricityPriceEurKwh} onChange={set('electricityPriceEurKwh')} suffix="€/kWh" help="z. B. 0,32" />
         </div>
       )}
 

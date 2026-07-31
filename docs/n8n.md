@@ -76,9 +76,9 @@ die Spaltenüberschriften im Sheet.
 | `Ihr Unternehmen` | Unternehmen (Ansprechpartner) |
 | `Ihr Ansprechpartner bei Green Fusion` | Default `Daniel Lizardo` (`GF_DEFAULT_CONTACT`) |
 | `Status Wärmepumpen-System` | Status der WP-Komponente (läuft schon / ist geplant) |
-| `Wärmepumpen-Konfiguration` | WP-Topologie |
-| `Hersteller der Wärmepumpe` | WP-Hersteller |
-| `Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)` | WP-Regler/Controller |
+| `Wärmepumpen-Konfiguration` | WP-Topologie (bei mehreren WP mit `" \| "` getrennt) |
+| `Hersteller der Wärmepumpe` | WP-Hersteller (bei mehreren WP mit `" \| "` getrennt) |
+| `Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)` | WP-Regler/Controller (bei mehreren WP mit `" \| "` getrennt) |
 | `Andere Wärmeerzeuger ` | Weitere Wärmeerzeuger |
 | `Status PV-Anlage` | Status der PV-Komponente |
 | `PV-Anlage Konfiguration ` | PV-Größe (kWp) |
@@ -94,6 +94,12 @@ die Spaltenüberschriften im Sheet.
 > Spaltenüberschriften im Sheet und diese Schlüssel müssen **zeichengenau**
 > übereinstimmen (inkl. Leerzeichen), sonst greift die automatische Zuordnung
 > nicht.
+
+> **Mehrere Wärmepumpen je Anlage:** Eine Anlage kann verschiedene Wärmepumpen
+> haben. Die Schlüssel bleiben unverändert — die Werte stehen dann mit `" | "`
+> getrennt darin (`Stiebel Eltron | Vaillant` ↔ `ISG-Web | sensoNET`). Das i-te
+> Teilstück gehört in jedem Feld zur i-ten Wärmepumpe; `—` heißt „für diese
+> Wärmepumpe nicht angegeben".
 
 ## Bekannte Punkte
 

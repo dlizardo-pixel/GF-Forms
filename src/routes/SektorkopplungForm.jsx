@@ -5,7 +5,7 @@ import { TopBar, Progress, Step } from '../components/Layout.jsx';
 import { TextField, NumberField, Hint } from '../components/Fields.jsx';
 import SiteEditor from '../components/sektor/SiteEditor.jsx';
 import SektorGrid from '../components/sektor/SektorGrid.jsx';
-import { makeSite, isSiteComplete } from '../lib/sektorModel.js';
+import { makeSite, isSiteComplete, normalizeSite } from '../lib/sektorModel.js';
 import { readPrefill } from '../lib/prefill.js';
 import { submitForm } from '../lib/api.js';
 import { loadDraft, saveDraft, clearDraft } from '../lib/draft.js';
@@ -44,7 +44,9 @@ export default function SektorkopplungForm() {
 
   const [phase, setPhase] = useState(draft?.phase ?? 'contact'); // 'contact' | 'sites' | 'submit'
   const [contact, setContact] = useState(draft?.contact ?? defaultContact);
-  const [sites, setSites] = useState(draft?.sites ?? [makeSite()]);
+  // Entwürfe können aus einer älteren Version stammen (eine WP in `components`)
+  // → beim Wiederherstellen auf das aktuelle Modell bringen.
+  const [sites, setSites] = useState(() => (draft?.sites ?? [makeSite()]).map(normalizeSite));
   const [siteCount, setSiteCount] = useState(draft?.siteCount ?? '1'); // vorab abgefragte Anzahl Anlagen
   const [current, setCurrent] = useState(draft?.current ?? 0);
   const [restored, setRestored] = useState(!!draft);
@@ -71,7 +73,7 @@ export default function SektorkopplungForm() {
             contactPhone: c.contactPhone || '',
           });
           if (Array.isArray(pl.sites) && pl.sites.length) {
-            setSites(pl.sites.map((s) => ({ ...makeSite(), ...s })));
+            setSites(pl.sites.map(normalizeSite));
             setSiteCount(String(pl.sites.length));
           }
           if (c.contactEmail) setPhase('sites');

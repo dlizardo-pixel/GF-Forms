@@ -451,6 +451,23 @@ a {
   border-radius: var(--gf-radius-lg);
   padding: var(--gf-space-6);
 }
+/* Karte innerhalb einer Karte – z. B. je Wärmepumpe einer Anlage. */
+.gf-subcard {
+  border: 1px solid var(--gf-polar-mist);
+  border-radius: var(--gf-radius-lg);
+  padding: var(--gf-space-4);
+  margin-bottom: var(--gf-space-4);
+  background: var(--gf-bg);
+}
+.gf-subcard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gf-space-2);
+  margin-bottom: var(--gf-space-2);
+  font-size: 14px;
+  color: var(--gf-brand-dark-grey);
+}
 .gf-collapse {
   border: 1px solid var(--gf-polar-mist);
   border-radius: var(--gf-radius-lg);

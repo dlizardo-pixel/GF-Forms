@@ -146,6 +146,35 @@ Weitere optionale System-Felder (selten nötig): `multiSupply` (true/false),
 (Komponenten, PV-Nutzung usw.) füllt sinnvollerweise der Kunde — für den
 Prefill reichen Adresse und Kontakt.
 
+**Mehrere Wärmepumpen je Anlage:** Eine Anlage kann verschiedene Wärmepumpen
+haben (anderes Modell, anderer Regler). Sie stehen in der Liste `heatPumps` —
+gleiche Geräte werden im Eintrag über `count` zusammengefasst, ein zweiter
+Eintrag ist für einen anderen Typ:
+
+```json
+{
+  "streetHeating": "Beispielstraße 12",
+  "plz": "10115",
+  "city": "Berlin",
+  "selectedComponents": ["waermepumpe"],
+  "componentStatus": { "waermepumpe": "vorhanden" },
+  "heatPumps": [
+    { "model": "Stiebel Eltron", "controller": "ISG-Web", "count": "3", "kw": "12", "topology": "Kaskade über einen Regler" },
+    { "model": "Vaillant", "controller": "sensoNET", "count": "1", "kw": "20", "topology": "Eine Wärmepumpe" }
+  ]
+}
+```
+
+`topology` nimmt die Werte aus `WP_TOPOLOGY` (`Eine Wärmepumpe`,
+`Kaskade über einen Regler`, `Mehrere parallel über verschiedene Regler`,
+`weiß nicht`). Alle Felder sind optional — nur `controller` muss der Kunde
+später ausfüllen, sonst lässt sich das Formular nicht absenden (er entscheidet
+über die Anbindbarkeit).
+
+> Das alte Format mit genau einer Wärmepumpe in
+> `components.heatPumpModel/-Controller/-Count/-Kw/-Topology` wird weiterhin
+> akzeptiert und beim Öffnen des Links automatisch in `heatPumps` übernommen.
+
 ## 4. Beispiele
 
 curl:
