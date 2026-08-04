@@ -95,8 +95,11 @@ export function validateSubmission(data) {
 }
 
 // Offizielles GreenFusion-Logo (White-Variante für dunklen Header).
-const LOGO_WHITE =
-  'https://raw.githubusercontent.com/dlizardo-pixel/Ressources-Greenfusion/main/GreenFusion-Logo-horizontal-white-RGB.svg';
+// Absolute URL auf das von Cloudflare Pages ausgelieferte Asset (public/brand/).
+// E-Mails brauchen eine absolute, öffentlich erreichbare URL – der frühere
+// raw.githubusercontent-Link zeigte auf ein privates Repo und blieb leer.
+// Custom-Domain? Dann hier (oder via Redeploy) auf die eigene Domain umstellen.
+const LOGO_WHITE = 'https://gf-forms.pages.dev/brand/logo-horizontal-white.svg';
 
 const wrapHtml = (title, inner) => `
 <div style="font-family:'Source Sans 3',Arial,sans-serif;color:#324B4A;max-width:680px;margin:0 auto;">

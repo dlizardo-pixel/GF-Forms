@@ -1,39 +1,40 @@
 /**
  * Green Fusion Brand Assets (Design System v2).
  *
- * Logos und Icons werden direkt als URLs aus dem offiziellen Brand-Repository
- * eingebunden (kein Base64, kein Nachzeichnen). Quelle:
- * https://github.com/dlizardo-pixel/Ressources-Greenfusion
+ * Logos und Icons liegen als statische Dateien in dieser App unter
+ * `public/brand/` und werden von Cloudflare Pages direkt (gleiche Domain)
+ * ausgeliefert – KEIN externer Abruf mehr von raw.githubusercontent.com.
+ * (Das Brand-Repo dlizardo-pixel/Ressources-Greenfusion ist privat, dessen
+ * raw-URLs lieferten im Browser 404 → Icons blieben leer.)
+ *
+ * Neue Assets: SVG in `public/brand/` legen und hier referenzieren.
  *
  * Auswahlregel Logo:
  *  - heller Hintergrund (#FFF, #F5FAF7, #FBFBFB) → Green
  *  - dunkler Hintergrund (#062726, #216377 …)    → White
  */
 
-const BASE = 'https://raw.githubusercontent.com/dlizardo-pixel/Ressources-Greenfusion/main/';
+const BASE = '/brand/';
 
 export const LOGOS = {
-  horizontalGreen: BASE + 'GreenFusion-Logo-horizontal-green-RGB.svg',
-  horizontalWhite: BASE + 'GreenFusion-Logo-horizontal-white-RGB.svg',
-  horizontalBlack: BASE + 'GreenFusion-Logo-horizontal-black-RGB.svg',
+  horizontalGreen: BASE + 'logo-horizontal-green.svg',
+  horizontalWhite: BASE + 'logo-horizontal-white.svg',
+  horizontalBlack: BASE + 'logo-horizontal-black.svg',
 };
 
-/**
- * Icons (Outline-Stil). Die Dateinamen im Repo enthalten teils Leerzeichen
- * (auch doppelte) – diese sind hier korrekt als %20 kodiert.
- */
+/** Icons (Outline-Stil), lokal in public/brand/. */
 export const ICONS = {
-  gas: BASE + 'icon%20gas-1.svg',
-  heating: BASE + 'icon%20heating%20heizungskoerper.svg',
-  heatpumpLg: BASE + 'icon%20heatpump-lg.svg',
-  heatpumpSm: BASE + 'icon%20heatpump-sm.svg',
-  heatrod: BASE + 'icon%20%20heatrod.svg',
-  power: BASE + 'icon%20steckdose%20power.svg',
-  pv: BASE + 'icon%20pv%20anlage.svg',
-  meter: BASE + 'icon%20zahler%20meter-1.svg',
-  people: BASE + 'icon%20%20people.svg',
-  techGuy: BASE + 'icon%20%20tech-guy.svg',
-  tools: BASE + 'tools.svg',
+  gas: BASE + 'icon-gas.svg',
+  heating: BASE + 'icon-heating.svg',
+  heatpumpLg: BASE + 'icon-heatpump-lg.svg',
+  heatpumpSm: BASE + 'icon-heatpump-sm.svg',
+  heatrod: BASE + 'icon-heatrod.svg',
+  power: BASE + 'icon-power.svg',
+  pv: BASE + 'icon-pv.svg',
+  meter: BASE + 'icon-meter.svg',
+  people: BASE + 'icon-people.svg',
+  techGuy: BASE + 'icon-techguy.svg',
+  tools: BASE + 'icon-tools.svg',
 };
 
 /** Heizungstyp → passendes Icon (nur dort, wo eine sinnvolle Entsprechung existiert). */
