@@ -137,9 +137,11 @@ function configAnswer(site) {
   if (topologies.includes('Mehrere parallel über verschiedene Regler')) return OWN_CONTROLLERS;
   if (topologies.some((t) => t === 'Eine Wärmepumpe' || t === 'Kaskade über einen Regler')) return CASCADE;
   if (pumps.length > 1) return OWN_CONTROLLERS;
-  // Topologie unbekannt: leer lassen. Ein „Nicht bekannt" gibt es in Notion
-  // nicht und würde dort eine neue Select-Option anlegen.
-  return '';
+  // Genau eine Wärmepumpe, Topologie nicht angegeben: der Kaskaden-Wortlaut
+  // („Eine / Mehrere Wärmepumpen … über einen zentralen Controller") trifft für
+  // eine einzelne Wärmepumpe zu. So bleibt das Feld nie leer – ein leeres
+  // Select lehnt Notion ab.
+  return CASCADE;
 }
 
 const ONLY_HEAT_PUMPS = 'Nur Wärmepumpen und ggf. Heizstäbe';
@@ -200,9 +202,13 @@ const PV_USAGE_TO_NOTION = {
   'Wir sind offen für Beratung zu diesem Thema': 'Ist noch nicht entschieden',
 };
 
+/** Ohne PV-Anlage bzw. ohne Angabe: vorhandene Notion-Option statt leer. */
+const PV_USAGE_UNCLEAR = 'Unklar / Noch nicht entschieden';
+
 function pvUsageAnswer(site) {
-  if (!has(site, 'pv')) return '';
+  if (!has(site, 'pv')) return PV_USAGE_UNCLEAR;
   const v = site.pvUsage || '';
+  if (!v) return PV_USAGE_UNCLEAR;
   return PV_USAGE_TO_NOTION[v] || v;
 }
 

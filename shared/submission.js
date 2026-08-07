@@ -58,6 +58,9 @@ export function validateSubmission(data) {
     });
   } else if (data.type === 'sektorkopplung') {
     const contact = data.contact || data; // rückwärtskompatibel
+    // Unternehmen ist Pflicht: der n8n-Filter verwirft Einträge ohne, und in
+    // Notion ist „Customer" ein Select — ein leerer Wert lässt den Lauf scheitern.
+    if (!isFilled(contact.company)) errors.push('Unternehmen fehlt.');
     if (!isFilled(contact.contactEmail)) errors.push('E-Mail des Ansprechpartners fehlt (für die Bestätigung).');
     else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact.contactEmail)) errors.push('E-Mail des Ansprechpartners ist ungültig.');
 

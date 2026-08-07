@@ -122,6 +122,7 @@ export default function SektorkopplungForm() {
 
   function startSites() {
     const errs = [];
+    if (!contact.company.trim()) errs.push('Bitte nennen Sie Ihren Unternehmensnamen.');
     if (!contact.contactEmail.trim()) errs.push('Wir brauchen Ihre E-Mail, um Ihnen die Bestätigung zu schicken.');
     if (!siteCount || parseInt(siteCount, 10) < 1) errs.push('Wie viele Anlagen möchten Sie erfassen?');
     if (errs.length) {
@@ -259,7 +260,7 @@ export default function SektorkopplungForm() {
               </p>
 
               <TextField label="Wie heißen Sie?" value={contact.contactName} onChange={setContactField('contactName')} />
-              <TextField label="Unternehmensname" value={contact.company} onChange={setContactField('company')} />
+              <TextField label="Unternehmensname" value={contact.company} onChange={setContactField('company')} required />
               <TextField label="Ihre E-Mail" value={contact.contactEmail} onChange={setContactField('contactEmail')} type="email" required help="Hierhin schicken wir die Bestätigung — kein Newsletter." />
               <TextField label="Ihre Telefonnummer" value={contact.contactPhone} onChange={setContactField('contactPhone')} help="Für kurze Rückfragen. Optional." />
               <NumberField

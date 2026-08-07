@@ -166,6 +166,46 @@
             {
               "key": "SK Status|status",
               "statusValue": "=1. Customer Signing"
+            },
+            {
+              "key": "Customer|select",
+              "selectValue": "={{ $json['Ihr Unternehmen'] }}"
+            },
+            {
+              "key": "Status WP-System|select",
+              "selectValue": "={{ $json['Status Wärmepumpen-System'] }}"
+            },
+            {
+              "key": "Status PV-Anlage|select",
+              "selectValue": "={{ $json['Status PV-Anlage'] }}"
+            },
+            {
+              "key": "WP-Konfiguration|select",
+              "selectValue": "={{ $json['Wärmepumpen-Konfiguration'] }}"
+            },
+            {
+              "key": "Commercial Setup|select",
+              "selectValue": "={{ $json['Nutzung von PV-Strom in ihrem Gebäude?'] }}"
+            },
+            {
+              "key": "Andere Wärmeerzeuger|multi_select",
+              "multiSelectValue": "={{ $json['Andere Wärmeerzeuger '] }}"
+            },
+            {
+              "key": "PV-Anlage Konfiguration|rich_text",
+              "textContent": "={{ $json['PV-Anlage Konfiguration '] }}"
+            },
+            {
+              "key": "PV-Partner / Umsetzungspartner|rich_text",
+              "textContent": "={{ $json['PV-Partner '] }}"
+            },
+            {
+              "key": "GLT/EMS|rich_text",
+              "textContent": "={{ $json['Gibt es ein Gebäudeleittechnik (GLT)-System oder Energiemonitoring/managementsystem (EMS) in ihrem Gebäude?'] }}"
+            },
+            {
+              "key": "Wärmebedarf|rich_text",
+              "textContent": "={{ $json['Berechnung der Einsparpotenziale (optional)'] }}"
             }
           ]
         },
@@ -183,55 +223,6 @@
         "notionOAuth2Api": {
           "id": "MtXhNqA8ov0rMxcj",
           "name": "Notion OAuth2 API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Baut die Notion-Properties AUS DEM SHEET – und laesst leere Werte konsequent\n// weg. Ein select/multi_select mit leerem Namen laesst Notion nicht zu; genau\n// daran ist der alte Flow abgebrochen.\n// Es werden ausschliesslich Werte geschrieben, die GF-Forms bereits auf die\n// vorhandenen Notion-Optionen abbildet – es entstehen also keine neuen Optionen.\n\nconst row = $('Loop Over Items').first().json;\nconst pageId = $('Seite anlegen').first().json.id;\n\nconst t = (v) => (v === undefined || v === null ? '' : String(v).trim());\nconst props = {};\n\nconst sel = (name, v) => { if (t(v)) props[name] = { select: { name: t(v) } }; };\nconst txt = (name, v) => { if (t(v)) props[name] = { rich_text: [{ text: { content: t(v).slice(0, 1900) } }] }; };\nconst multi = (name, v) => {\n  const names = t(v).split(',').map((s) => s.trim()).filter(Boolean);\n  if (names.length) props[name] = { multi_select: names.map((n) => ({ name: n })) };\n};\n\nsel('Customer', row['Ihr Unternehmen']);\nsel('Status WP-System', row['Status Wärmepumpen-System']);\nsel('Status PV-Anlage', row['Status PV-Anlage']);\nsel('WP-Konfiguration', row['Wärmepumpen-Konfiguration']);\nsel('Commercial Setup', row['Nutzung von PV-Strom in ihrem Gebäude?']);\n\n// In Notion ein MULTI-Select (im alten Flow faelschlich als select geschrieben).\nmulti('Andere Wärmeerzeuger', row['Andere Wärmeerzeuger ']);\n\ntxt('PV-Anlage Konfiguration', row['PV-Anlage Konfiguration ']);\ntxt('PV-Partner / Umsetzungspartner', row['PV-Partner ']);\ntxt('GLT/EMS', row['Gibt es ein Gebäudeleittechnik (GLT)-System oder Energiemonitoring/managementsystem (EMS) in ihrem Gebäude?']);\ntxt('Wärmebedarf', row['Berechnung der Einsparpotenziale (optional)']);\n\n// HINWEIS: 'Contact GF' wird bewusst NICHT gesetzt. Das Feld ist ein select mit\n// nur drei Optionen; 'Daniel Lizardo' & Co. wuerden dort neue Optionen anlegen.\n// Der Wert steht weiterhin im Sheet und wird vom Filter oben ausgewertet.\n\nreturn [{ json: { pageId, properties: props } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        420,
-        140
-      ],
-      "id": "a0000000-0000-4000-9000-000000000021",
-      "name": "Eigenschaften bauen"
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
-        "authentication": "genericCredentialType",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
-        "options": {},
-        "genericAuthType": "httpHeaderAuth"
-      },
-      "id": "a0000000-0000-4000-9000-000000000022",
-      "name": "Eigenschaften setzen",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        640,
-        140
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "REPLACE_ME",
-          "name": "Notion Header Auth"
         }
       }
     },
@@ -334,7 +325,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Ampel Controller + die Geraetefelder in EINEM Rutsch vorbereiten.\n// Hersteller/Serie werden nur geschrieben, wenn sie in der Notion-DB existieren\n// -> keine neuen Multi-Select-Optionen durch Kunden-Freitext.\n\nconst entries = $input.all();\nconst row = $('Loop Over Items').first().json;\nconst inv = $('Inverter Ampel zuordnen').first().json;\nconst pageId = inv.pageId;\n\nconst norm = (s) => (s || '').trim().toLowerCase();\nconst split = (v) => (v || '').split(',').map((s) => s.trim()).filter(Boolean);\n\nconst manufacturers = split(row['Hersteller der Wärmepumpe']);\nconst seriesList = split(row['Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)']);\n\nconst AMPEL = { '🟢': '🟢 Grün', '🟡': '🟡 Gelb', '🔴': '🔴 Rot' };\nconst RANK = { '🟢 Grün': 1, '🟡 Gelb': 2, '🔴 Rot': 3 };\nconst SKIP_NO_DATA = '⚪ Skipped: no manufacturer/series data';\nconst SKIP_NOT_FOUND = '⚪ Skipped: device not in Controller DB';\n\nlet ampel = null;\nconst matchedSeries = [];\n\nif (!manufacturers.length || !seriesList.length) {\n  ampel = SKIP_NO_DATA;\n} else {\n  for (const wanted of seriesList) {\n    const hit = entries.find((e) => {\n      const series = e.json.property_series || '';\n      const models = e.json.property_models || '';\n      if (series && norm(series) === norm(wanted)) return true;\n      return models.split(',').map((m) => m.trim()).some((m) => norm(m) === norm(wanted));\n    });\n    if (!hit) continue;\n    matchedSeries.push(hit.json.property_series || wanted);\n    const a = AMPEL[(hit.json.property_ampel_controller || '').trim()];\n    if (a && (!ampel || RANK[a] > (RANK[ampel] || 0))) ampel = a;\n  }\n  if (!matchedSeries.length || !ampel) ampel = ampel || SKIP_NOT_FOUND;\n}\n\nconst props = {};\nconst msel = (name, values) => {\n  const list = [...new Set((values || []).filter(Boolean))];\n  if (list.length) props[name] = { multi_select: list.map((n) => ({ name: n })) };\n};\n\nif (inv.inverterAmpel) props['Ampel Inverter'] = { select: { name: inv.inverterAmpel } };\nif (ampel) props['Ampel Controller'] = { select: { name: ampel } };\nmsel('Inverter manufacturer', inv.inverterManufacturers);\nmsel('Inverter series', inv.inverterSeries);\nmsel('HP manufacturer', matchedSeries.length ? [manufacturers[0]] : []);\nmsel('HP Controller Series', matchedSeries);\n\nreturn [{\n  json: {\n    pageId,\n    properties: props,\n    unternehmen: row['Ihr Unternehmen'] || '',\n    adresse: row['Adressen aller Gebäude mit gleichen Eigenschaften'] || '',\n    ampelInverter: inv.inverterAmpel || '—',\n    ampelController: ampel || '—',\n  },\n}];"
+        "jsCode": "// Ampel Controller ermitteln und ALLE Werte fuer die Notion-Update-Node\n// bereitstellen. Hersteller/Serien werden nur uebernommen, wenn sie in der\n// Notion-DB existieren -> es entstehen keine neuen Multi-Select-Optionen.\n\nconst entries = $input.all();\nconst row = $('Loop Over Items').first().json;\nconst inv = $('Inverter Ampel zuordnen').first().json;\n\nconst norm = (s) => (s || '').trim().toLowerCase();\nconst split = (v) => (v || '').split(',').map((s) => s.trim()).filter(Boolean);\n\nconst manufacturers = split(row['Hersteller der Wärmepumpe']);\nconst seriesList = split(row['Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)']);\n\nconst AMPEL = { '🟢': '🟢 Grün', '🟡': '🟡 Gelb', '🔴': '🔴 Rot' };\nconst RANK = { '🟢 Grün': 1, '🟡 Gelb': 2, '🔴 Rot': 3 };\nconst SKIP_NO_DATA = '⚪ Skipped: no manufacturer/series data';\nconst SKIP_NOT_FOUND = '⚪ Skipped: device not in Controller DB';\n\nlet ampel = null;\nconst matchedSeries = [];\n\nif (!manufacturers.length || !seriesList.length) {\n  ampel = SKIP_NO_DATA;\n} else {\n  for (const wanted of seriesList) {\n    const hit = entries.find((e) => {\n      const series = e.json.property_series || '';\n      const models = e.json.property_models || '';\n      if (series && norm(series) === norm(wanted)) return true;\n      return models.split(',').map((m) => m.trim()).some((m) => norm(m) === norm(wanted));\n    });\n    if (!hit) continue;\n    matchedSeries.push(hit.json.property_series || wanted);\n    const a = AMPEL[(hit.json.property_ampel_controller || '').trim()];\n    if (a && (!ampel || RANK[a] > (RANK[ampel] || 0))) ampel = a;\n  }\n  if (!ampel) ampel = SKIP_NOT_FOUND;\n}\n\n// Multi-Select-Werte als kommaseparierter String – so erwartet die Notion-Node sie.\nconst list = (arr) => [...new Set((arr || []).filter(Boolean))].join(',');\n\nreturn [{\n  json: {\n    pageId: $('Seite anlegen').first().json.id,\n    ampelInverter: inv.inverterAmpel || SKIP_NO_DATA,\n    ampelController: ampel,\n    inverterManufacturers: list(inv.inverterManufacturers),\n    inverterSeries: list(inv.inverterSeries),\n    hpManufacturers: list(matchedSeries.length ? [manufacturers[0]] : []),\n    hpControllerSeries: list(matchedSeries),\n    unternehmen: row['Ihr Unternehmen'] || '',\n    adresse: row['Adressen aller Gebäude mit gleichen Eigenschaften'] || '',\n  },\n}];"
       },
       "id": "a0000000-0000-4000-9000-000000000033",
       "name": "Controller Ampel zuordnen",
@@ -347,43 +338,7 @@
     },
     {
       "parameters": {
-        "method": "PATCH",
-        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
-        "authentication": "genericCredentialType",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
-        "options": {},
-        "genericAuthType": "httpHeaderAuth"
-      },
-      "id": "a0000000-0000-4000-9000-000000000034",
-      "name": "Geräte & Ampeln setzen",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1740,
-        140
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "REPLACE_ME",
-          "name": "Notion Header Auth"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Ergebnis dieser Anlage einsammeln und zurueck in die Schleife geben.\nconst r = $('Controller Ampel zuordnen').first().json;\nreturn [{\n  json: {\n    unternehmen: r.unternehmen,\n    adresse: r.adresse,\n    ampelInverter: r.ampelInverter,\n    ampelController: r.ampelController,\n  },\n}];"
+        "jsCode": "const r = $('Controller Ampel zuordnen').first().json;\nreturn [{ json: { unternehmen: r.unternehmen, adresse: r.adresse,\n  ampelInverter: r.ampelInverter, ampelController: r.ampelController } }];"
       },
       "id": "a0000000-0000-4000-9000-000000000035",
       "name": "Ergebnis sammeln",
@@ -418,6 +373,61 @@
       "id": "a0000000-0000-4000-9000-000000000040",
       "name": "Slack Benachrichtigung",
       "executeOnce": true
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.pageId }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Ampel Inverter|select",
+              "selectValue": "={{ $json.ampelInverter }}"
+            },
+            {
+              "key": "Ampel Controller|select",
+              "selectValue": "={{ $json.ampelController }}"
+            },
+            {
+              "key": "Inverter manufacturer|multi_select",
+              "multiSelectValue": "={{ $json.inverterManufacturers }}"
+            },
+            {
+              "key": "Inverter series|multi_select",
+              "multiSelectValue": "={{ $json.inverterSeries }}"
+            },
+            {
+              "key": "HP manufacturer|multi_select",
+              "multiSelectValue": "={{ $json.hpManufacturers }}"
+            },
+            {
+              "key": "HP Controller Series|multi_select",
+              "multiSelectValue": "={{ $json.hpControllerSeries }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        140
+      ],
+      "id": "a0000000-0000-4000-9000-000000000036",
+      "name": "Ampeln & Geräte setzen",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "MtXhNqA8ov0rMxcj",
+          "name": "Notion OAuth2 API"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -493,28 +503,6 @@
       "main": [
         [
           {
-            "node": "Eigenschaften bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Eigenschaften bauen": {
-      "main": [
-        [
-          {
-            "node": "Eigenschaften setzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Eigenschaften setzen": {
-      "main": [
-        [
-          {
             "node": "Inverter DB abfragen",
             "type": "main",
             "index": 0
@@ -559,18 +547,7 @@
       "main": [
         [
           {
-            "node": "Geräte & Ampeln setzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Geräte & Ampeln setzen": {
-      "main": [
-        [
-          {
-            "node": "Ergebnis sammeln",
+            "node": "Ampeln & Geräte setzen",
             "type": "main",
             "index": 0
           }
@@ -582,6 +559,17 @@
         [
           {
             "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ampeln & Geräte setzen": {
+      "main": [
+        [
+          {
+            "node": "Ergebnis sammeln",
             "type": "main",
             "index": 0
           }
