@@ -122,10 +122,10 @@
         "resource": "databasePage",
         "databaseId": {
           "__rl": true,
-          "value": "19e8e7b6-9be5-80bd-8dd5-d898a3b7af48",
+          "value": "3b48e7b6-9be5-80dd-9cdd-fcd9de3b5c7c",
           "mode": "list",
-          "cachedResultName": "SC Project List",
-          "cachedResultUrl": "https://www.notion.so/19e8e7b69be580bd8dd5d898a3b7af48"
+          "cachedResultName": "SC Project List (Testkopie)",
+          "cachedResultUrl": "https://www.notion.so/3b48e7b69be580dd9cddfcd9de3b5c7c"
         },
         "propertiesUi": {
           "propertyValues": [
