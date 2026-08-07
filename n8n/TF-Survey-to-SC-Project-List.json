@@ -1,0 +1,356 @@
+{
+  "name": "TF Survey to SC Project List (korrigiert)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gf-forms",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-460, -420],
+      "id": "a0000000-0000-4000-9000-000000000001",
+      "name": "Webhook GF-Forms",
+      "webhookId": "gf-forms-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GF-Forms schickt EIN JSON pro Anlage. Der Webhook legt den POST-Body unter\n// .body ab – hier auf die oberste Ebene heben, damit die Google-Sheets-Node die\n// Felder automatisch den gleichnamigen Spalten zuordnen kann.\nreturn $input.all().map((item) => ({ json: item.json.body ?? item.json }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-240, -420],
+      "id": "a0000000-0000-4000-9000-000000000002",
+      "name": "Normalize"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 866907048,
+          "mode": "list",
+          "cachedResultName": "Formularantworten 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit#gid=866907048"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-20, -420],
+      "id": "a0000000-0000-4000-9000-000000000003",
+      "name": "Sheet: Zeile anhängen"
+    },
+
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 866907048,
+          "mode": "list",
+          "cachedResultName": "Formularantworten 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit#gid=866907048"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [-460, 40],
+      "id": "a0000000-0000-4000-9000-000000000010",
+      "name": "Google Sheets Trigger",
+      "retryOnFail": false,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            {
+              "id": "2d0165a4-e391-45fa-accb-367a585b0de3",
+              "leftValue": "={{ $json['Ihr Ansprechpartner bei Green Fusion'] }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a0000000-0000-4000-9000-000000000011",
+      "name": "Filter New Entries",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [-240, 40]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-20, 40],
+      "id": "a0000000-0000-4000-9000-000000000012",
+      "name": "Loop Over Items"
+    },
+
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "19e8e7b6-9be5-80bd-8dd5-d898a3b7af48",
+          "mode": "list",
+          "cachedResultName": "SC Project List",
+          "cachedResultUrl": "https://www.notion.so/19e8e7b69be580bd8dd5d898a3b7af48"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=SC Project Name|title",
+              "title": "={{ $json['Adressen aller Gebäude mit gleichen Eigenschaften'] }}"
+            },
+            {
+              "key": "SK Status|status",
+              "statusValue": "=1. Customer Signing"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [200, 140],
+      "id": "a0000000-0000-4000-9000-000000000020",
+      "name": "Seite anlegen"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Baut die Notion-Properties AUS DEM SHEET – und laesst leere Werte konsequent\n// weg. Ein select/multi_select mit leerem Namen laesst Notion nicht zu; genau\n// daran ist der alte Flow abgebrochen.\n// Es werden ausschliesslich Werte geschrieben, die GF-Forms bereits auf die\n// vorhandenen Notion-Optionen abbildet – es entstehen also keine neuen Optionen.\n\nconst row = $('Loop Over Items').first().json;\nconst pageId = $('Seite anlegen').first().json.id;\n\nconst t = (v) => (v === undefined || v === null ? '' : String(v).trim());\nconst props = {};\n\nconst sel = (name, v) => { if (t(v)) props[name] = { select: { name: t(v) } }; };\nconst txt = (name, v) => { if (t(v)) props[name] = { rich_text: [{ text: { content: t(v).slice(0, 1900) } }] }; };\nconst multi = (name, v) => {\n  const names = t(v).split(',').map((s) => s.trim()).filter(Boolean);\n  if (names.length) props[name] = { multi_select: names.map((n) => ({ name: n })) };\n};\n\nsel('Customer', row['Ihr Unternehmen']);\nsel('Status WP-System', row['Status Wärmepumpen-System']);\nsel('Status PV-Anlage', row['Status PV-Anlage']);\nsel('WP-Konfiguration', row['Wärmepumpen-Konfiguration']);\nsel('Commercial Setup', row['Nutzung von PV-Strom in ihrem Gebäude?']);\n\n// In Notion ein MULTI-Select (im alten Flow faelschlich als select geschrieben).\nmulti('Andere Wärmeerzeuger', row['Andere Wärmeerzeuger ']);\n\ntxt('PV-Anlage Konfiguration', row['PV-Anlage Konfiguration ']);\ntxt('PV-Partner / Umsetzungspartner', row['PV-Partner ']);\ntxt('GLT/EMS', row['Gibt es ein Gebäudeleittechnik (GLT)-System oder Energiemonitoring/managementsystem (EMS) in ihrem Gebäude?']);\ntxt('Wärmebedarf', row['Berechnung der Einsparpotenziale (optional)']);\n\n// HINWEIS: 'Contact GF' wird bewusst NICHT gesetzt. Das Feld ist ein select mit\n// nur drei Optionen; 'Daniel Lizardo' & Co. wuerden dort neue Optionen anlegen.\n// Der Wert steht weiterhin im Sheet und wird vom Filter oben ausgewertet.\n\nreturn [{ json: { pageId, properties: props } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 140],
+      "id": "a0000000-0000-4000-9000-000000000021",
+      "name": "Eigenschaften bauen"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
+        "options": {}
+      },
+      "id": "a0000000-0000-4000-9000-000000000022",
+      "name": "Eigenschaften setzen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 140]
+    },
+
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "operation": "getAll",
+        "returnAll": true,
+        "databaseId": {
+          "__rl": true,
+          "value": "3588e7b6-9be5-800b-aaea-eca2316bcec9",
+          "mode": "list",
+          "cachedResultName": "Inverter DB",
+          "cachedResultUrl": "https://www.notion.so/3588e7b69be5800baaeaeca2316bcec9"
+        },
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Manufacturer|select",
+              "condition": "equals",
+              "selectValue": "={{ ($('Loop Over Items').first().json['PV-Wechselrichter Hersteller'] || '').split(',')[0].trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [860, 140],
+      "id": "a0000000-0000-4000-9000-000000000030",
+      "name": "Inverter DB abfragen",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ampel Inverter: Serie/Modell gegen die Inverter DB pruefen.\n// Mehrere Werte sind mit ', ' getrennt (Multi-Select-Format).\n// Zurueckgeschrieben werden NUR Treffer aus der DB -> keine neuen Optionen.\n\nconst entries = $input.all();\nconst row = $('Loop Over Items').first().json;\nconst pageId = $('Seite anlegen').first().json.id;\n\nconst norm = (s) => (s || '').trim().toLowerCase();\nconst split = (v) => (v || '').split(',').map((s) => s.trim()).filter(Boolean);\n\nconst manufacturers = split(row['PV-Wechselrichter Hersteller']);\nconst seriesList = split(row['PV-Wechselrichter Modell / Serie']);\n\nconst AMPEL = { '🟢': '🟢 Grün', '🟡': '🟡 Gelb', '🔴': '🔴 Rot' };\nconst RANK = { '🟢 Grün': 1, '🟡 Gelb': 2, '🔴 Rot': 3 };\nconst SKIP_NO_DATA = '⚪ Skipped: no manufacturer/series data';\nconst SKIP_NOT_FOUND = '⚪ Skipped: device not in Inverter DB';\n\nlet ampel = null;\nconst matchedSeries = [];\n\nif (!manufacturers.length || !seriesList.length) {\n  ampel = SKIP_NO_DATA;\n} else {\n  for (const wanted of seriesList) {\n    const hit = entries.find((e) => {\n      const series = e.json.property_series || '';\n      const models = e.json.property_models || '';\n      if (series && norm(series) === norm(wanted)) return true;\n      return models.split(',').map((m) => m.trim()).some((m) => norm(m) === norm(wanted));\n    });\n    if (!hit) continue;\n    matchedSeries.push(hit.json.property_series || wanted);\n    const a = AMPEL[(hit.json.property_ampel_inverter || '').trim()];\n    if (a && (!ampel || RANK[a] > (RANK[ampel] || 0))) ampel = a;\n  }\n  if (!matchedSeries.length || !ampel) ampel = ampel || SKIP_NOT_FOUND;\n}\n\nreturn [{\n  json: {\n    pageId,\n    inverterAmpel: ampel,\n    // Hersteller nur setzen, wenn die Serie in der DB gefunden wurde.\n    inverterManufacturers: matchedSeries.length ? [manufacturers[0]] : [],\n    inverterSeries: [...new Set(matchedSeries)],\n  },\n}];"
+      },
+      "id": "a0000000-0000-4000-9000-000000000031",
+      "name": "Inverter Ampel zuordnen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 140]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "returnAll": true,
+        "databaseId": {
+          "__rl": true,
+          "value": "1dfaaa23-abc8-4400-aad2-ee4b1bc5aa9c",
+          "mode": "id"
+        },
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Manufacturer|select",
+              "condition": "equals",
+              "selectValue": "={{ ($('Loop Over Items').first().json['Hersteller der Wärmepumpe'] || '').split(',')[0].trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a0000000-0000-4000-9000-000000000032",
+      "name": "Controller DB abfragen",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1300, 140],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ampel Controller + die Geraetefelder in EINEM Rutsch vorbereiten.\n// Hersteller/Serie werden nur geschrieben, wenn sie in der Notion-DB existieren\n// -> keine neuen Multi-Select-Optionen durch Kunden-Freitext.\n\nconst entries = $input.all();\nconst row = $('Loop Over Items').first().json;\nconst inv = $('Inverter Ampel zuordnen').first().json;\nconst pageId = inv.pageId;\n\nconst norm = (s) => (s || '').trim().toLowerCase();\nconst split = (v) => (v || '').split(',').map((s) => s.trim()).filter(Boolean);\n\nconst manufacturers = split(row['Hersteller der Wärmepumpe']);\nconst seriesList = split(row['Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)']);\n\nconst AMPEL = { '🟢': '🟢 Grün', '🟡': '🟡 Gelb', '🔴': '🔴 Rot' };\nconst RANK = { '🟢 Grün': 1, '🟡 Gelb': 2, '🔴 Rot': 3 };\nconst SKIP_NO_DATA = '⚪ Skipped: no manufacturer/series data';\nconst SKIP_NOT_FOUND = '⚪ Skipped: device not in Controller DB';\n\nlet ampel = null;\nconst matchedSeries = [];\n\nif (!manufacturers.length || !seriesList.length) {\n  ampel = SKIP_NO_DATA;\n} else {\n  for (const wanted of seriesList) {\n    const hit = entries.find((e) => {\n      const series = e.json.property_series || '';\n      const models = e.json.property_models || '';\n      if (series && norm(series) === norm(wanted)) return true;\n      return models.split(',').map((m) => m.trim()).some((m) => norm(m) === norm(wanted));\n    });\n    if (!hit) continue;\n    matchedSeries.push(hit.json.property_series || wanted);\n    const a = AMPEL[(hit.json.property_ampel_controller || '').trim()];\n    if (a && (!ampel || RANK[a] > (RANK[ampel] || 0))) ampel = a;\n  }\n  if (!matchedSeries.length || !ampel) ampel = ampel || SKIP_NOT_FOUND;\n}\n\nconst props = {};\nconst msel = (name, values) => {\n  const list = [...new Set((values || []).filter(Boolean))];\n  if (list.length) props[name] = { multi_select: list.map((n) => ({ name: n })) };\n};\n\nif (inv.inverterAmpel) props['Ampel Inverter'] = { select: { name: inv.inverterAmpel } };\nif (ampel) props['Ampel Controller'] = { select: { name: ampel } };\nmsel('Inverter manufacturer', inv.inverterManufacturers);\nmsel('Inverter series', inv.inverterSeries);\nmsel('HP manufacturer', matchedSeries.length ? [manufacturers[0]] : []);\nmsel('HP Controller Series', matchedSeries);\n\nreturn [{\n  json: {\n    pageId,\n    properties: props,\n    unternehmen: row['Ihr Unternehmen'] || '',\n    adresse: row['Adressen aller Gebäude mit gleichen Eigenschaften'] || '',\n    ampelInverter: inv.inverterAmpel || '—',\n    ampelController: ampel || '—',\n  },\n}];"
+      },
+      "id": "a0000000-0000-4000-9000-000000000033",
+      "name": "Controller Ampel zuordnen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 140]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
+        "options": {}
+      },
+      "id": "a0000000-0000-4000-9000-000000000034",
+      "name": "Geräte & Ampeln setzen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ergebnis dieser Anlage einsammeln und zurueck in die Schleife geben.\nconst r = $('Controller Ampel zuordnen').first().json;\nreturn [{\n  json: {\n    unternehmen: r.unternehmen,\n    adresse: r.adresse,\n    ampelInverter: r.ampelInverter,\n    ampelController: r.ampelController,\n  },\n}];"
+      },
+      "id": "a0000000-0000-4000-9000-000000000035",
+      "name": "Ergebnis sammeln",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1960, 140]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "<DEINE_SLACK_WEBHOOK_URL>",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=text",
+              "value": "=✅ TF-Sync – {{ $input.all().length }} Anlage(n) verarbeitet\n\n{{ $input.all().map((it) => '• *' + it.json.unternehmen + '* – ' + it.json.adresse + '\\n   Inverter: ' + it.json.ampelInverter + ' | Controller: ' + it.json.ampelController).join('\\n') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [200, -60],
+      "id": "a0000000-0000-4000-9000-000000000040",
+      "name": "Slack Benachrichtigung",
+      "executeOnce": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook GF-Forms": { "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]] },
+    "Normalize": { "main": [[{ "node": "Sheet: Zeile anhängen", "type": "main", "index": 0 }]] },
+    "Sheet: Zeile anhängen": { "main": [[]] },
+
+    "Google Sheets Trigger": { "main": [[{ "node": "Filter New Entries", "type": "main", "index": 0 }]] },
+    "Filter New Entries": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] },
+    "Loop Over Items": {
+      "main": [
+        [{ "node": "Slack Benachrichtigung", "type": "main", "index": 0 }],
+        [{ "node": "Seite anlegen", "type": "main", "index": 0 }]
+      ]
+    },
+    "Seite anlegen": { "main": [[{ "node": "Eigenschaften bauen", "type": "main", "index": 0 }]] },
+    "Eigenschaften bauen": { "main": [[{ "node": "Eigenschaften setzen", "type": "main", "index": 0 }]] },
+    "Eigenschaften setzen": { "main": [[{ "node": "Inverter DB abfragen", "type": "main", "index": 0 }]] },
+    "Inverter DB abfragen": { "main": [[{ "node": "Inverter Ampel zuordnen", "type": "main", "index": 0 }]] },
+    "Inverter Ampel zuordnen": { "main": [[{ "node": "Controller DB abfragen", "type": "main", "index": 0 }]] },
+    "Controller DB abfragen": { "main": [[{ "node": "Controller Ampel zuordnen", "type": "main", "index": 0 }]] },
+    "Controller Ampel zuordnen": { "main": [[{ "node": "Geräte & Ampeln setzen", "type": "main", "index": 0 }]] },
+    "Geräte & Ampeln setzen": { "main": [[{ "node": "Ergebnis sammeln", "type": "main", "index": 0 }]] },
+    "Ergebnis sammeln": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {},
+  "nodeGroups": [],
+  "tags": []
+}
