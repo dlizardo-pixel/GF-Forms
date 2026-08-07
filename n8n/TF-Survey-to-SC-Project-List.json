@@ -203,7 +203,7 @@
       "parameters": {
         "method": "PATCH",
         "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
-        "authentication": "predefinedCredentialType",
+        "authentication": "genericCredentialType",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -218,7 +218,7 @@
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
         "options": {},
-        "nodeCredentialType": "notionOAuth2Api"
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "a0000000-0000-4000-9000-000000000022",
       "name": "Eigenschaften setzen",
@@ -229,9 +229,9 @@
         140
       ],
       "credentials": {
-        "notionOAuth2Api": {
-          "id": "MtXhNqA8ov0rMxcj",
-          "name": "Notion OAuth2 API"
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Notion Header Auth"
         }
       }
     },
@@ -349,7 +349,7 @@
       "parameters": {
         "method": "PATCH",
         "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
-        "authentication": "predefinedCredentialType",
+        "authentication": "genericCredentialType",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -364,7 +364,7 @@
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
         "options": {},
-        "nodeCredentialType": "notionOAuth2Api"
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "a0000000-0000-4000-9000-000000000034",
       "name": "Geräte & Ampeln setzen",
@@ -375,9 +375,9 @@
         140
       ],
       "credentials": {
-        "notionOAuth2Api": {
-          "id": "MtXhNqA8ov0rMxcj",
-          "name": "Notion OAuth2 API"
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Notion Header Auth"
         }
       }
     },
