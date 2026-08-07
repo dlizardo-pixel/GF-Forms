@@ -9,7 +9,10 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-460, -420],
+      "position": [
+        -460,
+        -420
+      ],
       "id": "a0000000-0000-4000-9000-000000000001",
       "name": "Webhook GF-Forms",
       "webhookId": "gf-forms-intake"
@@ -20,7 +23,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-240, -420],
+      "position": [
+        -240,
+        -420
+      ],
       "id": "a0000000-0000-4000-9000-000000000002",
       "name": "Normalize"
     },
@@ -51,14 +57,22 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [-20, -420],
+      "position": [
+        -20,
+        -420
+      ],
       "id": "a0000000-0000-4000-9000-000000000003",
       "name": "Sheet: Zeile anhängen"
     },
-
     {
       "parameters": {
-        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
         "documentId": {
           "__rl": true,
           "value": "https://docs.google.com/spreadsheets/d/17kxBcYJozJsj7Wg53etT3CvAvRfNMGHoMm9Bp38Rs18/edit?usp=sharing",
@@ -76,7 +90,10 @@
       },
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
-      "position": [-460, 40],
+      "position": [
+        -460,
+        40
+      ],
       "id": "a0000000-0000-4000-9000-000000000010",
       "name": "Google Sheets Trigger",
       "retryOnFail": false,
@@ -85,13 +102,21 @@
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
           "conditions": [
             {
               "id": "2d0165a4-e391-45fa-accb-367a585b0de3",
               "leftValue": "={{ $json['Ihr Ansprechpartner bei Green Fusion'] }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEquals" }
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
             }
           ],
           "combinator": "and"
@@ -102,7 +127,10 @@
       "name": "Filter New Entries",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.3,
-      "position": [-240, 40]
+      "position": [
+        -240,
+        40
+      ]
     },
     {
       "parameters": {
@@ -111,11 +139,13 @@
       },
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [-20, 40],
+      "position": [
+        -20,
+        40
+      ],
       "id": "a0000000-0000-4000-9000-000000000012",
       "name": "Loop Over Items"
     },
-
     {
       "parameters": {
         "authentication": "oAuth2",
@@ -143,9 +173,18 @@
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
-      "position": [200, 140],
+      "position": [
+        200,
+        140
+      ],
       "id": "a0000000-0000-4000-9000-000000000020",
-      "name": "Seite anlegen"
+      "name": "Seite anlegen",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "MtXhNqA8ov0rMxcj",
+          "name": "Notion OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
@@ -153,7 +192,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 140],
+      "position": [
+        420,
+        140
+      ],
       "id": "a0000000-0000-4000-9000-000000000021",
       "name": "Eigenschaften bauen"
     },
@@ -161,25 +203,38 @@
       "parameters": {
         "method": "PATCH",
         "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "predefinedCredentialType",
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }]
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
-        "options": {}
+        "options": {},
+        "nodeCredentialType": "notionOAuth2Api"
       },
       "id": "a0000000-0000-4000-9000-000000000022",
       "name": "Eigenschaften setzen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [640, 140]
+      "position": [
+        640,
+        140
+      ],
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "MtXhNqA8ov0rMxcj",
+          "name": "Notion OAuth2 API"
+        }
+      }
     },
-
     {
       "parameters": {
         "authentication": "oAuth2",
@@ -188,10 +243,10 @@
         "returnAll": true,
         "databaseId": {
           "__rl": true,
-          "value": "3588e7b6-9be5-800b-aaea-eca2316bcec9",
+          "value": "04d8e7b6-9be5-822b-afdb-8115a0e07acd",
           "mode": "list",
-          "cachedResultName": "Inverter DB",
-          "cachedResultUrl": "https://www.notion.so/3588e7b69be5800baaeaeca2316bcec9"
+          "cachedResultName": "Inverter DB (Kopie)",
+          "cachedResultUrl": "https://www.notion.so/04d8e7b69be5822bafdb8115a0e07acd"
         },
         "filterType": "manual",
         "filters": {
@@ -207,11 +262,20 @@
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
-      "position": [860, 140],
+      "position": [
+        860,
+        140
+      ],
       "id": "a0000000-0000-4000-9000-000000000030",
       "name": "Inverter DB abfragen",
       "alwaysOutputData": true,
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "MtXhNqA8ov0rMxcj",
+          "name": "Notion OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
@@ -221,7 +285,10 @@
       "name": "Inverter Ampel zuordnen",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1080, 140]
+      "position": [
+        1080,
+        140
+      ]
     },
     {
       "parameters": {
@@ -230,8 +297,10 @@
         "returnAll": true,
         "databaseId": {
           "__rl": true,
-          "value": "1dfaaa23-abc8-4400-aad2-ee4b1bc5aa9c",
-          "mode": "id"
+          "value": "b168e7b6-9be5-8380-ba28-017384a5bee2",
+          "mode": "list",
+          "cachedResultName": "Controller DB Kopie",
+          "cachedResultUrl": "https://www.notion.so/b168e7b69be58380ba28017384a5bee2"
         },
         "filterType": "manual",
         "filters": {
@@ -243,15 +312,25 @@
             }
           ]
         },
-        "options": {}
+        "options": {},
+        "authentication": "oAuth2"
       },
       "id": "a0000000-0000-4000-9000-000000000032",
       "name": "Controller DB abfragen",
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
-      "position": [1300, 140],
+      "position": [
+        1300,
+        140
+      ],
       "alwaysOutputData": true,
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "MtXhNqA8ov0rMxcj",
+          "name": "Notion OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
@@ -261,29 +340,46 @@
       "name": "Controller Ampel zuordnen",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 140]
+      "position": [
+        1520,
+        140
+      ]
     },
     {
       "parameters": {
         "method": "PATCH",
         "url": "={{ 'https://api.notion.com/v1/pages/' + $json.pageId }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "authentication": "predefinedCredentialType",
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [{ "name": "Notion-Version", "value": "2022-06-28" }]
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({ properties: $json.properties }) }}",
-        "options": {}
+        "options": {},
+        "nodeCredentialType": "notionOAuth2Api"
       },
       "id": "a0000000-0000-4000-9000-000000000034",
       "name": "Geräte & Ampeln setzen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1740, 140]
+      "position": [
+        1740,
+        140
+      ],
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "MtXhNqA8ov0rMxcj",
+          "name": "Notion OAuth2 API"
+        }
+      }
     },
     {
       "parameters": {
@@ -293,9 +389,11 @@
       "name": "Ergebnis sammeln",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1960, 140]
+      "position": [
+        1960,
+        140
+      ]
     },
-
     {
       "parameters": {
         "method": "POST",
@@ -313,7 +411,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [200, -60],
+      "position": [
+        200,
+        -60
+      ],
       "id": "a0000000-0000-4000-9000-000000000040",
       "name": "Slack Benachrichtigung",
       "executeOnce": true
@@ -321,27 +422,172 @@
   ],
   "pinData": {},
   "connections": {
-    "Webhook GF-Forms": { "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]] },
-    "Normalize": { "main": [[{ "node": "Sheet: Zeile anhängen", "type": "main", "index": 0 }]] },
-    "Sheet: Zeile anhängen": { "main": [[]] },
-
-    "Google Sheets Trigger": { "main": [[{ "node": "Filter New Entries", "type": "main", "index": 0 }]] },
-    "Filter New Entries": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] },
-    "Loop Over Items": {
+    "Webhook GF-Forms": {
       "main": [
-        [{ "node": "Slack Benachrichtigung", "type": "main", "index": 0 }],
-        [{ "node": "Seite anlegen", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Seite anlegen": { "main": [[{ "node": "Eigenschaften bauen", "type": "main", "index": 0 }]] },
-    "Eigenschaften bauen": { "main": [[{ "node": "Eigenschaften setzen", "type": "main", "index": 0 }]] },
-    "Eigenschaften setzen": { "main": [[{ "node": "Inverter DB abfragen", "type": "main", "index": 0 }]] },
-    "Inverter DB abfragen": { "main": [[{ "node": "Inverter Ampel zuordnen", "type": "main", "index": 0 }]] },
-    "Inverter Ampel zuordnen": { "main": [[{ "node": "Controller DB abfragen", "type": "main", "index": 0 }]] },
-    "Controller DB abfragen": { "main": [[{ "node": "Controller Ampel zuordnen", "type": "main", "index": 0 }]] },
-    "Controller Ampel zuordnen": { "main": [[{ "node": "Geräte & Ampeln setzen", "type": "main", "index": 0 }]] },
-    "Geräte & Ampeln setzen": { "main": [[{ "node": "Ergebnis sammeln", "type": "main", "index": 0 }]] },
-    "Ergebnis sammeln": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] }
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Sheet: Zeile anhängen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet: Zeile anhängen": {
+      "main": [
+        []
+      ]
+    },
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter New Entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Entries": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Slack Benachrichtigung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Seite anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seite anlegen": {
+      "main": [
+        [
+          {
+            "node": "Eigenschaften bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eigenschaften bauen": {
+      "main": [
+        [
+          {
+            "node": "Eigenschaften setzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eigenschaften setzen": {
+      "main": [
+        [
+          {
+            "node": "Inverter DB abfragen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inverter DB abfragen": {
+      "main": [
+        [
+          {
+            "node": "Inverter Ampel zuordnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inverter Ampel zuordnen": {
+      "main": [
+        [
+          {
+            "node": "Controller DB abfragen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Controller DB abfragen": {
+      "main": [
+        [
+          {
+            "node": "Controller Ampel zuordnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Controller Ampel zuordnen": {
+      "main": [
+        [
+          {
+            "node": "Geräte & Ampeln setzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Geräte & Ampeln setzen": {
+      "main": [
+        [
+          {
+            "node": "Ergebnis sammeln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ergebnis sammeln": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
   "settings": {
