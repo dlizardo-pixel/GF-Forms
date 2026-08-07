@@ -95,14 +95,27 @@ const status = (site, key) => (site.componentStatus || {})[key];
 // Antworten in der Wortwahl des alten Formulars
 // ---------------------------------------------------------------------------
 
-/** „Installiert & in Betrieb" / „Inbetriebnahme … geplant" */
+/**
+ * „Installiert & in Betrieb" / „Inbetriebnahme … geplant".
+ *
+ * Die Werte müssen EXAKT den Select-Optionen der Notion-Spalten
+ * „Status WP-System" bzw. „Status PV-Anlage" entsprechen — neue Optionen
+ * sollen dort nicht entstehen. Deshalb gibt es auch für „nicht gewählt" und
+ * „Zeitpunkt unbekannt" einen echten Wert statt einer leeren Zelle: Notion
+ * lehnt ein Select mit leerem Namen ab und der n8n-Lauf bricht ab.
+ */
+const UNCLEAR = { waermepumpe: 'noch unklar', pv: 'nicht vorhanden / noch unklar' };
+
 function statusAnswer(site, key) {
-  if (!has(site, key)) return '';
+  const unclear = UNCLEAR[key] || '';
+  if (!has(site, key)) return unclear;
   if (status(site, key) === 'vorhanden') return 'Installiert & in Betrieb';
-  if (status(site, key) !== 'geplant') return '';
+  if (status(site, key) !== 'geplant') return unclear;
   if (site.planningHorizon === 'In den nächsten 6 Monaten') return 'Inbetriebnahme in den nächsten 6 Monaten geplant';
   if (site.planningHorizon === 'In mehr als 6 Monaten') return 'Inbetriebnahme in mehr als 6 Monaten geplant';
-  return 'Inbetriebnahme geplant';
+  // „geplant, Zeitpunkt weiß nicht" – für diesen Fall gibt es in Notion keine
+  // eigene Option; der Zeithorizont steht zusätzlich in den Extra-Spalten.
+  return unclear;
 }
 
 const CASCADE = 'Eine / Mehrere Wärmepumpen gesteuert über einen zentralen Controller (Kaskade)';
@@ -113,8 +126,10 @@ const OWN_CONTROLLERS = 'Mehrere Wärmepumpen mit je eigenem Controller';
  * sind per Definition „je eigener Controller" – das gilt auch dann, wenn die
  * Topologie je Eintrag nicht ausgefüllt wurde.
  */
+const NO_HEAT_PUMP = 'Keine Wärmepumpe vorhanden';
+
 function configAnswer(site) {
-  if (!has(site, 'waermepumpe')) return '';
+  if (!has(site, 'waermepumpe')) return NO_HEAT_PUMP;
   const pumps = siteHeatPumps(site);
   const controllers = new Set(pumps.map((hp) => (hp.controller || '').trim().toLowerCase()).filter(Boolean));
   if (pumps.length > 1 && controllers.size > 1) return OWN_CONTROLLERS;
@@ -122,18 +137,43 @@ function configAnswer(site) {
   if (topologies.includes('Mehrere parallel über verschiedene Regler')) return OWN_CONTROLLERS;
   if (topologies.some((t) => t === 'Eine Wärmepumpe' || t === 'Kaskade über einen Regler')) return CASCADE;
   if (pumps.length > 1) return OWN_CONTROLLERS;
-  if (topologies.includes('weiß nicht')) return 'Nicht bekannt';
+  // Topologie unbekannt: leer lassen. Ein „Nicht bekannt" gibt es in Notion
+  // nicht und würde dort eine neue Select-Option anlegen.
   return '';
 }
 
 const ONLY_HEAT_PUMPS = 'Nur Wärmepumpen und ggf. Heizstäbe';
-const OTHER_GENERATORS =
-  'Sonstige Wärmeerzeuger (Fernwärme, Gas-Brennwertkessel, Gas-Etagenheizung, etc.)';
+const WP_PLUS_DISTRICT = 'Wärmepumpen als Haupterzeuger und Fernwärme als Spitzenlast';
+const WP_PLUS_GAS = 'Wärmepumpen als Haupterzeuger und Gas-Kessel als Spitzenlast';
+const OTHER_IS_MAIN = 'Anderer Haupterzeuger und Wärmepumpe nur Spitzenlast/Warmwasser';
 
+/**
+ * Notion führt „Andere Wärmeerzeuger" als MULTI-SELECT mit fachlichen
+ * Optionen (wer ist Haupterzeuger, was ist Spitzenlast) — nicht als Freitext.
+ * Genau das erfragt das Formular über „WP Haupterzeuger" + die Liste der
+ * weiteren Erzeuger, also leiten wir die passende Option daraus ab.
+ *
+ * Reihenfolge bei mehreren Erzeugern: Fernwärme vor Gas. Trifft keine Option
+ * zu (z. B. WP + Öl-Kessel), bleibt das Feld leer — die konkreten Erzeuger
+ * stehen ohnehin in der Extra-Spalte „Weitere Wärmeerzeuger (Details)".
+ */
 function otherGeneratorsAnswer(site) {
-  if (!has(site, 'waermepumpe') && !(site.otherHeatSources || []).length) return '';
-  return (site.otherHeatSources || []).length ? OTHER_GENERATORS : ONLY_HEAT_PUMPS;
+  const others = site.otherHeatSources || [];
+  if (!has(site, 'waermepumpe')) return '';
+  if (!others.length) return ONLY_HEAT_PUMPS;
+  if (site.wpIsMainHeater === false) return OTHER_IS_MAIN;
+  if (others.includes('fernwaerme')) return WP_PLUS_DISTRICT;
+  if (others.includes('gas')) return WP_PLUS_GAS;
+  return '';
 }
+
+/**
+ * Wortlaut der Auswahl „Sonstige Wärmeerzeuger" aus dem alten Formular.
+ * Nur für die Komponentenliste unten (reine Sheet-Spalte) — NICHT für die
+ * Notion-Spalte „Andere Wärmeerzeuger", die fachliche Optionen erwartet.
+ */
+const OTHER_GENERATORS_LABEL =
+  'Sonstige Wärmeerzeuger (Fernwärme, Gas-Brennwertkessel, Gas-Etagenheizung, etc.)';
 
 /** Komponentenliste in der Wortwahl des alten Formulars. */
 const COMPONENT_ANSWER = {
@@ -145,8 +185,25 @@ const COMPONENT_ANSWER = {
 
 function componentListAnswer(site) {
   const list = (site.selectedComponents || []).map((k) => COMPONENT_ANSWER[k]).filter(Boolean);
-  if ((site.otherHeatSources || []).length) list.push(OTHER_GENERATORS);
+  if ((site.otherHeatSources || []).length) list.push(OTHER_GENERATORS_LABEL);
   return list.join(', ');
+}
+
+/**
+ * PV-Nutzung → Select-Option „Commercial Setup" in Notion.
+ * Sieben der acht Formularoptionen heißen dort exakt gleich. Nur „Wir sind
+ * offen für Beratung zu diesem Thema" existiert in Notion nicht und würde eine
+ * neue Option anlegen — deshalb auf die vorhandene, inhaltlich passende
+ * Option abgebildet.
+ */
+const PV_USAGE_TO_NOTION = {
+  'Wir sind offen für Beratung zu diesem Thema': 'Ist noch nicht entschieden',
+};
+
+function pvUsageAnswer(site) {
+  if (!has(site, 'pv')) return '';
+  const v = site.pvUsage || '';
+  return PV_USAGE_TO_NOTION[v] || v;
 }
 
 /** GLT/EMS: „Nein" oder „Ja" (mit Modbus-Zusatz, falls bekannt). */
@@ -202,11 +259,13 @@ export function buildSektorRow(site, { contact = {}, gfContact = '', timestamp =
 
     // Mehrere Wärmepumpen: Werte mit " | " in derselben Reihenfolge, damit das
     // i-te Teilstück in jeder Spalte zur i-ten Wärmepumpe gehört.
+    // ", " statt " | ": diese beiden Spalten landen in Notion in einem
+    // MULTI-SELECT, und n8n trennt Multi-Select-Werte an Kommas.
     'Hersteller der Wärmepumpe': has(site, 'waermepumpe')
-      ? pumps.map((hp) => heatPumpName(hp) || '—').join(' | ')
+      ? pumps.map((hp) => heatPumpName(hp) || '—').join(', ')
       : '',
     'Wärmepumpen Controller (Modell- oder Serienname, z.B. ISG-Web)': has(site, 'waermepumpe')
-      ? joinHeatPumpField(site, 'controller')
+      ? joinHeatPumpField(site, 'controller', ', ')
       : '',
     'Wärmepumpen-Konfiguration': configAnswer(site),
     'Andere Wärmeerzeuger ': otherGeneratorsAnswer(site),
@@ -216,7 +275,7 @@ export function buildSektorRow(site, { contact = {}, gfContact = '', timestamp =
     'PV-Wechselrichter Modell / Serie': has(site, 'pv') ? c.pvInverterModel || '' : '',
     'Status PV-Anlage': statusAnswer(site, 'pv'),
     'PV-Anlage Konfiguration ': has(site, 'pv') && filled(c.pvKwp) ? `${c.pvKwp} kWp` : '',
-    'Nutzung von PV-Strom in ihrem Gebäude?': has(site, 'pv') ? site.pvUsage || '' : '',
+    'Nutzung von PV-Strom in ihrem Gebäude?': pvUsageAnswer(site),
     'Berechnung der Einsparpotenziale (optional)': savingsAnswer(site),
     'PV-Partner ': has(site, 'pv') ? formatPvOperator(site) : '',
     'Gibt es ein Gebäudeleittechnik (GLT)-System oder Energiemonitoring/managementsystem (EMS) in ihrem Gebäude?':

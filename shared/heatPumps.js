@@ -143,11 +143,16 @@ export function formatHeatPump(hp) {
  * Ein Feld über alle Wärmepumpen für eine einspaltige Ausgabe (CSV, n8n).
  * Getrennt mit " | ", damit das i-te Teilstück in jeder Spalte zur i-ten
  * Wärmepumpe gehört ("Stiebel Eltron | Vaillant" ↔ "ISG-Web | sensoNET").
+ *
+ * `separator`: Für die beiden Spalten, die in Notion auf ein MULTI-SELECT
+ * gehen (Hersteller, Controller-Serie), muss mit ", " getrennt werden – n8n
+ * zerlegt Multi-Select-Werte an Kommas. Mit " | " entstünde dort eine einzige
+ * unsinnige Option ("Vaillant | Stiebel Eltron").
  */
-export function joinHeatPumpField(site, key) {
+export function joinHeatPumpField(site, key, separator = ' | ') {
   const list = siteHeatPumps(site);
   if (!list.some((hp) => filled(hp[key]))) return ''; // nirgends gefüllt → leere Zelle
   if (list.length === 1) return String(list[0][key] ?? '');
   // Bei mehreren Wärmepumpen hält "—" die Position, damit die Spalten zueinander passen.
-  return list.map((hp) => (filled(hp[key]) ? String(hp[key]) : '—')).join(' | ');
+  return list.map((hp) => (filled(hp[key]) ? String(hp[key]) : '—')).join(separator);
 }
