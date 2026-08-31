@@ -12,7 +12,7 @@ import { consumptionToKwh } from '../../shared/conversion.js';
  */
 export function checkConsumptionPerArea(system) {
   const area = Number(system.heatedAreaM2);
-  const kwh = consumptionToKwh(system.consumptionLastYear, system.heatingType);
+  const kwh = consumptionToKwh(system.consumptionLastYear, system.heatingTypes);
   if (!area || !kwh) return null;
 
   const perM2 = kwh / area;
